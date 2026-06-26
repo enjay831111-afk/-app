@@ -3,7 +3,7 @@ import { ChatMessage, ErrorCategory, WritingError, CATEGORY_CHINESE } from '../t
 import {
   Sparkles, MessageSquare, ShieldAlert, Award, ArrowUpRight,
   Send, BrainCircuit, RefreshCw, MessageCircle, BadgeHelp, CheckCircle,
-  Flame, Keyboard, X, ChevronDown, GripHorizontal
+  Flame, Keyboard, X, ChevronDown
 } from 'lucide-react';
 import TypingEngine from './TypingEngine';
 
@@ -46,13 +46,9 @@ export default function InteractiveChatCoach({
   const [customPromptTitle, setCustomPromptTitle] = useState('');
   const [customPromptDesc, setCustomPromptDesc]   = useState('');
   const [isRegenerating, setIsRegenerating]       = useState(false);
-  const [sidebarOpen, setSidebarOpen]             = useState(false);
+  // Mobile: sidebar drawer open state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // ─── 終極版：使用動態行內高度控制 ───
-  const [chatFeedHeight, setChatFeedHeight] = useState(420); 
-  const isDraggingRef = useRef(false);
-  const startYRef = useRef(0);
-  const startHeightRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const updateCurrentPrompt = (val: string) => {
@@ -66,34 +62,6 @@ export default function InteractiveChatCoach({
   const updateActiveTopicTitle = (val: string) => {
     setActiveTopicTitle(val);
     try { localStorage.setItem('english_typing_coach_active_topic', val); } catch (e) { console.error(e); }
-  };
-
-  // ─── 終極版：全域指標拖曳事件監聽 ───
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // 啟用指標鎖定，滑鼠即使移出瀏覽器視窗外也能繼續捕捉移動
-    e.currentTarget.setPointerCapture(e.pointerId);
-    isDraggingRef.current = true;
-    startYRef.current = e.clientY;
-    startHeightRef.current = chatFeedHeight;
-    document.body.style.cursor = 'row-resize';
-    document.body.style.userSelect = 'none';
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDraggingRef.current) return;
-    const deltaY = e.clientY - startYRef.current;
-    // 限制拖曳範圍在 200px 至 900px 之間
-    const newHeight = Math.max(200, Math.min(900, startHeightRef.current + deltaY));
-    setChatFeedHeight(newHeight);
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (isDraggingRef.current) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-      isDraggingRef.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    }
   };
 
   const handleRegenerateInitialQuestion = async () => {
@@ -143,7 +111,7 @@ export default function InteractiveChatCoach({
     updateCurrentPrompt(prompt);
     updateHasStarted(true);
     updateActiveTopicTitle(title);
-    setSidebarOpen(false);
+    setSidebarOpen(false); // close drawer on mobile after picking
   };
 
   const handleTypingComplete = (finalWpm: number, finalAccuracy: number) => {
@@ -220,6 +188,7 @@ export default function InteractiveChatCoach({
 
   const isFriendMode = turnCount % 3 === 0 && turnCount > 0;
 
+  // ── Sidebar content (shared between desktop and mobile drawer) ──────
   const SidebarContent = () => (
     <div className="space-y-5 h-full flex flex-col">
       <div>
@@ -274,6 +243,7 @@ export default function InteractiveChatCoach({
         </div>
       )}
 
+      {/* Mode guide */}
       <div className="bg-gradient-to-br from-emerald-950/5 to-amber-500/5 rounded-2xl p-4 border border-emerald-100/50 space-y-3 mt-auto">
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4 text-amber-500" />
@@ -296,9 +266,9 @@ export default function InteractiveChatCoach({
   );
 
   return (
-    <div className="flex flex-col gap-4 w-full" id="chat-coach-layout">
+    <div className="flex flex-col gap-4" id="chat-coach-layout">
 
-      {/* ── Mobile: topic bar ──────────── */}
+      {/* ── Mobile: topic bar + drawer trigger ──────────── */}
       <div className="lg:hidden flex items-center gap-2">
         <button
           onClick={() => setSidebarOpen(true)}
@@ -318,7 +288,9 @@ export default function InteractiveChatCoach({
       {/* ── Mobile drawer overlay ────────────────────────── */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
+          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
+          {/* Sheet */}
           <div className="relative bg-white rounded-t-3xl p-5 animate-slideUp max-h-[80dvh] flex flex-col"
                style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}>
             <div className="flex items-center justify-between mb-4">
@@ -335,18 +307,19 @@ export default function InteractiveChatCoach({
       )}
 
       {/* ── Main layout ─────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" style={{ minHeight: 0 }}>
 
         {/* Desktop sidebar */}
         <div className="hidden lg:flex lg:col-span-1 bg-white border border-slate-100 rounded-3xl p-5 shadow-xs flex-col">
           <SidebarContent />
         </div>
 
-        {/* 核心大容器：h-auto 取消外部壓縮比例阻抗 */}
-        <div id="chat-feed-container" className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col shadow-xs h-auto overflow-hidden">
+        {/* Chat feed + typing box */}
+        <div className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col shadow-xs"
+             style={{ minHeight: 0, height: 'clamp(480px, calc(100dvh - 200px), 820px)' }}>
 
           {/* Feed Header */}
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3 px-1 shrink-0">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3 px-1">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
               <div>
@@ -365,11 +338,8 @@ export default function InteractiveChatCoach({
             )}
           </div>
 
-          {/* 歷史訊息區：強迫採用指定高度且不可收縮 */}
-          <div 
-            className="chat-messages-scroll space-y-5 pr-1 overflow-y-auto block"
-            style={{ height: `${chatFeedHeight}px`, minHeight: `${chatFeedHeight}px`, flex: '0 0 auto' }}
-          >
+          {/* Scrollable messages */}
+          <div className="chat-messages-scroll space-y-5 pr-1 mb-3">
             {!hasStarted ? (
               <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 p-8 space-y-3">
                 <MessageSquare className="h-10 w-10 text-emerald-700/60" />
@@ -489,11 +459,13 @@ export default function InteractiveChatCoach({
                               </div>
                             )}
 
+                            {/* Native Speaker Upgrades */}
                             <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-2xs space-y-4">
                               <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
                                 <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" />
                                 <span className="text-xs font-extrabold text-slate-800">⭐ Native Speaker Upgrade (母語表達三階進化)</span>
                               </div>
+                              {/* Stack vertically on mobile, 3-col on md+ */}
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {[
                                   { label: '⭐ Understandable', labelColor: 'text-slate-400', text: msg.analysis.understandableEnglish, key: 'upgrade_1', bg: 'bg-slate-50 border-slate-100' },
@@ -546,35 +518,44 @@ export default function InteractiveChatCoach({
             <div ref={chatEndRef} />
           </div>
 
-          {/* ─── 終極指標事件拉桿：完美防止拖曳斷聯 ─── */}
-          {hasStarted && (
-            <div 
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              className="w-full h-6 my-2 flex items-center justify-center cursor-row-resize hover:bg-slate-200/80 active:bg-slate-300 rounded-lg transition-colors group select-none shrink-0 touch-none"
-              title="上下拖曳可調整對話框大小"
-              style={{ contentVisibility: 'auto' }}
-            >
-              <div className="w-24 h-1.5 bg-slate-300 group-hover:bg-slate-400 group-active:bg-slate-500 rounded-full flex items-center justify-center transition-colors">
-                <GripHorizontal className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
-              </div>
-            </div>
-          )}
-
           {/* Typing input */}
           {hasStarted && (
-            <div className="border-t border-slate-100 pt-3 shrink-0">
-              <TypingEngine
-                mode="free"
-                onComplete={(wpm, accuracy, text) => {
-                  handleTypingComplete(wpm, accuracy);
-                  handleSubmitMessage(text);
-                }}
-                minWordsForComplete={30}
-                actionButtonLabel="送出回答並進行剖析"
-                placeholder="在此輸入您的英文回覆... 試著寫滿 30 個單字以上！"
-              />
+            <div className="border-t border-slate-100 pt-4 shrink-0 flex-1 flex flex-col">
+              {/* 透過內部注入注入 CSS：強制隱藏數據欄，並將輸入框筐撐大 */}
+              <style>{`
+                /* 1. 隱藏打字引擎內部的數據顯示列 (WPM, 正確率, 字數統計, 時間) */
+                #chat-typing-container .typing-stats-row, 
+                #chat-typing-container [class*="grid-cols-4"], 
+                #chat-typing-container [class*="space-x-4"],
+                #chat-typing-container [class*="stats"] { 
+                  display: none !important; 
+                }
+                
+                /* 2. 強制將輸入框的高度與寬度撐大，提供完美的長句盲打申論空間 */
+                #chat-typing-container textarea,
+                #chat-typing-container input[type="text"],
+                #chat-typing-container .typing-textarea-mock,
+                #chat-typing-container [class*="input"],
+                #chat-typing-container [class*="textarea"] {
+                  min-height: 180px !important;
+                  width: 100% !important;
+                  font-size: 16px !important;
+                  line-height: 1.6 !important;
+                }
+              `}</style>
+              
+              <div id="chat-typing-container" className="w-full flex-1 flex flex-col">
+                <TypingEngine
+                  mode="free"
+                  onComplete={(wpm, accuracy, text) => {
+                    handleTypingComplete(wpm, accuracy);
+                    handleSubmitMessage(text);
+                  }}
+                  minWordsForComplete={30}
+                  actionButtonLabel="送出回答並進行剖析"
+                  placeholder="在此輸入您的英文回覆... 試著寫滿 30 個單字以上！"
+                />
+              </div>
             </div>
           )}
         </div>
