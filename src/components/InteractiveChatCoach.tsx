@@ -47,8 +47,6 @@ export default function InteractiveChatCoach({
   const [customPromptDesc, setCustomPromptDesc]   = useState('');
   const [isRegenerating, setIsRegenerating]       = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // ⚡ 電腦版打字輸入筐預設高度 200px
   const [typingBoxHeight, setTypingBoxHeight] = useState(200);
   const isDraggingRef = useRef(false);
 
@@ -81,7 +79,7 @@ export default function InteractiveChatCoach({
     } catch (err: any) {
       console.error(err);
       alert('產生新提問失敗：' + (err.message || '連線逾時'));
-    } finally {
+    } finaly {
       setIsRegenerating(false);
     }
   };
@@ -101,7 +99,7 @@ export default function InteractiveChatCoach({
     } catch (err: any) {
       console.error(err);
       alert('產生新提問失敗：' + (err.message || '連線逾時'));
-    } finally {
+    } finaly {
       setIsRegenerating(false);
     }
   };
@@ -110,28 +108,22 @@ export default function InteractiveChatCoach({
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistory, isPending]);
 
-  // ⚡ 電腦版專用：滑鼠拖拽拉伸高度
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDraggingRef.current) return;
-      
       const layoutContainer = document.getElementById('chat-main-feed-container');
       if (!layoutContainer) return;
-
       const containerRect = layoutContainer.getBoundingClientRect();
       const newHeight = containerRect.bottom - e.clientY;
-      
       if (newHeight > 120 && newHeight < 500) {
         setTypingBoxHeight(newHeight);
       }
     };
-
     const handleMouseUp = () => {
       isDraggingRef.current = false;
       document.body.style.cursor = 'unset';
       document.body.style.userSelect = 'unset';
     };
-
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
     return () => {
@@ -139,6 +131,57 @@ export default function InteractiveChatCoach({
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, []);
+
+  // 🎯 核心控制：動態將 0/30 計數器注入到 textarea 容器內部右下角
+  useEffect(() => {
+    if (!hasStarted) return;
+
+    const interval = setInterval(() => {
+      const container = document.getElementById('chat-typing-container');
+      if (!container) return;
+
+      const textarea = container.querySelector('textarea');
+      const textareaWrapper = textarea?.parentElement;
+
+      if (textarea && textareaWrapper) {
+        textareaWrapper.style.position = 'relative';
+        textarea.style.paddingBottom = '32px'; // 防止打字蓋到計數器
+
+        let innerCounter = textareaWrapper.querySelector('#inner-word-counter');
+        if (!innerCounter) {
+          innerCounter = document.createElement('div');
+          innerCounter.id = 'inner-word-counter';
+          innerCounter.setAttribute('style', `
+            position: absolute !important;
+            bottom: 12px !important;
+            right: 14px !important;
+            font-family: monospace !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+            color: #64748b !important;
+            background: rgba(255, 255, 255, 0.85) !important;
+            padding: 1px 4px !important;
+            border-radius: 4px !important;
+            pointer-events: none !important;
+            z-index: 20 !important;
+          `);
+          textareaWrapper.appendChild(innerCounter);
+        }
+
+        const updateInnerCount = () => {
+          const val = textarea.value.trim();
+          const words = val ? val.split(/\s+/).length : 0;
+          innerCounter!.textContent = `${words}/30`;
+        };
+
+        textarea.removeEventListener('input', updateInnerCount);
+        textarea.addEventListener('input', updateInnerCount);
+        updateInnerCount();
+      }
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [hasStarted, chatHistory]);
 
   const startTopic = (prompt: string, title: string) => {
     updateCurrentPrompt(prompt);
@@ -155,6 +198,10 @@ export default function InteractiveChatCoach({
   const handleSubmitMessage = async (text: string) => {
     if (!text.trim()) return;
     await onSendMessage(text, typingWpm, typingAccuracy);
+    setTimeout(() => {
+      const el = document.getElementById('inner-word-counter');
+      if (el) el.textContent = '0/30';
+    }, 50);
   };
 
   const startInlinePractice = (practiceId: string, text: string) => {
@@ -220,7 +267,6 @@ export default function InteractiveChatCoach({
   };
 
   const isFriendMode = turnCount % 3 === 0 && turnCount > 0;
-
   const SidebarContent = () => (
     <div className="space-y-5 h-full flex flex-col">
       <div>
@@ -528,7 +574,7 @@ export default function InteractiveChatCoach({
               <div className="flex items-start space-x-3 animate-pulse">
                 <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-extrabold shrink-0">AI</div>
                 <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-2xs space-y-2">
-                  <span className="text-xs text-slate-400 font-bold block">AI 教練正在分析您的句子...</span>
+                  <span className="text-xs text-slate-400 font-bold block">AI 教練正在 analysis 您的句子...</span>
                   <div className="flex space-x-1.5">
                     {[0, 150, 300].map(delay => (
                       <div key={delay} className="w-2.5 h-2.5 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
@@ -541,7 +587,7 @@ export default function InteractiveChatCoach({
             <div ref={chatEndRef} />
           </div>
 
-          {/* ⚡ 智慧拉伸控制條 (Resizer)：只在電腦版 (lg:flex) 顯示，手機版直接隱藏不佔空間 */}
+          {/* 智慧拉伸控制條 (Resizer)：只在電腦版顯示 */}
           {hasStarted && (
             <div
               className="hidden lg:flex w-full h-2 my-1 bg-slate-200/50 hover:bg-emerald-600/30 active:bg-emerald-700/50 rounded-full cursor-row-resize items-center justify-center transition-colors select-none shrink-0"
@@ -562,17 +608,44 @@ export default function InteractiveChatCoach({
               className="shrink-0 flex flex-col overflow-hidden lg:h-auto" 
               style={{ height: window.innerWidth >= 1024 ? `${typingBoxHeight}px` : 'auto' }}
             >
-              {/* 透過精準樣式注入：手機版自動撐開高度，按鈕永不遺失；電腦版完美支援高度拖曳 */}
               <style>{`
-                /* 1. 精確隱藏打字引擎內部的數據顯示列 */
+                /* 1. 精確隱藏打字引擎內部的頂部數據顯示列（四大卡片） */
                 #chat-typing-container .typing-stats-row, 
-                #chat-typing-container [class*=\"grid-cols-4\"], 
-                #chat-typing-container [class*=\"space-x-4\"],
-                #chat-typing-container [class*=\"stats\"] { 
+                #chat-typing-container [class*="grid-cols-4"], 
+                #chat-typing-container [class*="space-x-4"],
+                #chat-typing-container [class*="stats"],
+                #chat-typing-container .grid.grid-cols-2 { 
                   display: none !important; 
                 }
 
-                /* 2. 電腦版專屬高度約束 (RWD 覆蓋) */
+                /* 🎯 2. 徹底消滅鉛筆圖案的「已輸入 0 字 (目標 30 字)」與右方的「0 words」整橫條 */
+                #chat-typing-container .flex.items-center.justify-between.p-3,
+                #chat-typing-container div:has(> .lucide-pen-tool),
+                #chat-typing-container .text-slate-400.text-xs,
+                #chat-typing-container div.text-xs.text-slate-400,
+                #chat-typing-container .text-slate-400:has(span),
+                #chat-typing-container div:has(> span:contains("words")) {
+                  display: none !important;
+                  opacity: 0 !important;
+                  height: 0 !important;
+                  padding: 0 !important;
+                  margin: 0 !important;
+                }
+
+                /* 🎯 3. 修改按鈕文字與樣式：左按鈕改為「重練」、右按鈕改為「送出」並維持原寬度排版 */
+                #chat-typing-container button {
+                  font-size: 0 !important; /* 隱藏原本的超長字串 */
+                }
+                #chat-typing-container button:first-child::before {
+                  content: "重練" !important;
+                  font-size: 14px !important;
+                }
+                #chat-typing-container button:last-child::before {
+                  content: "送出" !important;
+                  font-size: 14px !important;
+                }
+
+                /* 4. 電腦版專屬高度約束 */
                 @media (min-width: 1024px) {
                   #chat-typing-container,
                   #chat-typing-container > div {
@@ -581,13 +654,13 @@ export default function InteractiveChatCoach({
                   }
                   #chat-typing-container textarea,
                   #chat-typing-container .typing-textarea-mock {
-                    height: calc(100% - 56px) !important; /* 扣除送出按鈕的高度 */
+                    height: calc(100% - 56px) !important;
                     overflow-y: auto !important;
                     resize: none !important;
                   }
                 }
                 
-                /* 3. 手機行動版專屬優化：解除固定高度，確保「重新練習與送出回答」隨時可見 */
+                /* 5. 手機行動版專屬優化 */
                 @media (max-width: 1023px) {
                   #chat-main-feed-container {
                     height: auto !important;
@@ -598,7 +671,7 @@ export default function InteractiveChatCoach({
                   }
                   #chat-typing-container textarea,
                   #chat-typing-container .typing-textarea-mock {
-                    height: 90px !important; /* 手機版輸入框給予適當的固定精簡高度，騰出空間給按鈕 */
+                    height: 90px !important;
                     min-height: 80px !important;
                     overflow-y: auto !important;
                     resize: none !important;
