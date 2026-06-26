@@ -1,0 +1,6 @@
+{
+  "name": "English Typing & Writing Coach",
+  "description": "An interactive typing and writing practice application that helps you master English through real-time typing, error correction, native-speaker phrasing upgrades, and detailed speed metrics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
