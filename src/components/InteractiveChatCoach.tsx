@@ -455,10 +455,11 @@ export default function InteractiveChatCoach({
               </div>
             ) : (
               <>
+                {/* ── CHANGE 1: Coach Question 框加 min-h，手機版撐高讓問題清晰可見 ── */}
                 <div className="flex items-start space-x-3">
                   <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-extrabold shadow-sm shrink-0">AI</div>
-                  <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-2xs flex-1 min-w-0">
-                    <span className="text-[10px] font-bold text-emerald-700 block mb-1">教練提問 (Coach Question)</span>
+                  <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-2xs flex-1 min-w-0 min-h-[110px] sm:min-h-[90px]">
+                    <span className="text-[10px] font-bold text-emerald-700 block mb-2">教練提問 (Coach Question)</span>
                     <p className="text-sm font-semibold text-slate-700 leading-relaxed">{currentPrompt}</p>
                     {chatHistory.length === 0 && (
                       <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
@@ -495,7 +496,8 @@ export default function InteractiveChatCoach({
                         <div className="flex items-start space-x-3">
                           <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-extrabold shrink-0 shadow-sm">AI</div>
                           <div className="space-y-3 flex-1 min-w-0">
-                            <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-2xs">
+                            {/* ── CHANGE 2: AI model 回覆框同樣加 min-h ── */}
+                            <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-2xs min-h-[90px]">
                               <span className={`text-[9px] font-bold block mb-1 tracking-wider uppercase ${msg.isFriendTurn ? 'text-amber-600' : 'text-emerald-700'}`}>
                                 {msg.isFriendTurn ? '💬 好友私房回信 (Friend Reply)' : '🎓 專業教練指導 (Coach Answer)'}
                               </span>
@@ -640,7 +642,7 @@ export default function InteractiveChatCoach({
               className="shrink-0 flex flex-col overflow-hidden lg:h-auto" 
               style={{ height: window.innerWidth >= 1024 ? `${typingBoxHeight}px` : 'auto' }}
             >
-              {/* 精準防禦 CSS：最大化手機版提問視窗，並讓送出按鈕緊貼最底部 */}
+              {/* ── CHANGE 3: 手機版 CSS 修正：按鈕組緊貼底部導覽列，消除多餘空白 ── */}
               <style>{`
                 /* 1. 隱藏打字引擎內部的頂部四大數據卡片 */
                 #chat-typing-container .typing-stats-row, 
@@ -669,20 +671,33 @@ export default function InteractiveChatCoach({
                   }
                 }
                 
-                /* 3. 手機行動版完美優化：最大化提問視窗，並讓送出按鈕緊密貼地 */
+                /* 3. 手機行動版：讓重練/送出按鈕緊貼底部導覽列，消除多餘空白 */
                 @media (max-width: 1023px) {
+                  /* 外層容器：解除高度限制，取消所有底部間距 */
                   #chat-main-feed-container {
                     height: auto !important;
-                    max-height: none !important; /* 解除高度閹割，由網頁原生滾動與元件彈性撐開 */
-                    padding-bottom: 0px !important; /* 拔除內距，讓打字容器自然下沉 */
+                    max-height: none !important;
+                    padding-bottom: 0px !important;
+                    margin-bottom: 0px !important;
                   }
+                  /* 打字容器本體：清零 margin，不留白 */
                   #chat-typing-container {
                     height: auto !important;
-                    margin-bottom: -12px !important; /* 強制外框下壓，消除底部多餘空隙 */
+                    margin-bottom: 0px !important;
+                    margin-top: 0px !important;
                   }
+                  /* 打字引擎最外層 div：清零 padding，讓按鈕自然沉底 */
                   #chat-typing-container > div {
-                    padding-bottom: 2px !important; /* 讓最底部的送出按鈕極致貼近導覽列 */
+                    padding-bottom: 0px !important;
+                    padding-top: 0px !important;
+                    gap: 0px !important;
                   }
+                  /* 按鈕列（最後一個 div）：去掉任何上間距 */
+                  #chat-typing-container > div > div:last-child {
+                    margin-top: 0px !important;
+                    padding-top: 0px !important;
+                  }
+                  /* textarea 高度維持緊湊 */
                   #chat-typing-container textarea,
                   #chat-typing-container .typing-textarea-mock {
                     height: 90px !important;
@@ -692,6 +707,7 @@ export default function InteractiveChatCoach({
                   }
                 }
 
+                /* 4. 全域 textarea 字型 */
                 #chat-typing-container textarea,
                 #chat-typing-container .typing-textarea-mock {
                   font-size: 16px !important;
