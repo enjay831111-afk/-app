@@ -138,37 +138,44 @@ export default function InteractiveChatCoach({
       const container = document.getElementById('chat-typing-container');
       if (!container) return;
 
-      // 1. 徹底隱藏任何夾雜舊字樣提示的區塊
-      const allDivs = container.getElementsByTagName('div');
-      for (let i = 0; i < allDivs.length; i++) {
-        const div = allDivs[i];
-        if (
-          div.textContent?.includes('已輸入') || 
-          div.textContent?.includes('目標30字') || 
-          div.textContent?.includes('words') ||
-          div.querySelector('.lucide-pen-tool')
-        ) {
-          if (!div.querySelector('textarea') && !div.querySelector('button')) {
-            div.style.display = 'none';
-            div.style.height = '0px';
-            div.style.padding = '0px';
-            div.style.margin = '0px';
+      // 1. 手機版：隱藏 TypingEngine stats grid 數據卡片
+      if (window.innerWidth < 1024) {
+        const engineContainer = container.querySelector('#typing-engine-container');
+        if (engineContainer) {
+          // Stats grid: 第一個子 div（grid grid-cols-2 sm:grid-cols-4）
+          const firstChild = engineContainer.children[0] as HTMLElement | undefined;
+          if (firstChild) {
+            firstChild.style.display = 'none';
+            firstChild.style.marginBottom = '0';
+          }
+          // 字數統計行（textarea 下方那行 "已輸入 X 字"）
+          const relativeDiv = engineContainer.querySelector(':scope > div.relative');
+          if (relativeDiv) {
+            const children = Array.from(relativeDiv.children) as HTMLElement[];
+            children.forEach(child => {
+              if (!child.querySelector('textarea') && !child.querySelector('#free-typing-input')) {
+                child.style.display = 'none';
+              }
+            });
           }
         }
       }
 
-      // 2. 處理按鈕更名與即時同步
-      const buttons = container.getElementsByTagName('button');
-      if (buttons.length >= 2) {
-        const btnLeft = buttons[0];
-        const btnRight = buttons[1];
-        
-        if (btnLeft && (btnLeft.textContent?.includes('重新練習') || btnLeft.textContent?.includes('Reset') || btnLeft.textContent !== '重練')) {
-          btnLeft.textContent = '重練';
-        }
-        if (btnRight && (btnRight.textContent?.includes('送出回答') || btnRight.textContent?.includes('剖析') || btnRight.textContent !== '送出')) {
-          btnRight.textContent = '送出';
-        }
+      // 2. 按鈕更名：target TypingEngine #typing-engine-container > div.flex > button
+      const engineEl = container.querySelector('#typing-engine-container');
+      if (engineEl) {
+        const allBtns = engineEl.querySelectorAll(':scope > div > button');
+        allBtns.forEach((btn) => {
+          const el = btn as HTMLElement;
+          if (el.textContent?.includes('重新練習') || el.textContent?.includes('Reset')) {
+            const span = el.querySelector('span');
+            if (span) span.textContent = '重練';
+          }
+          if (el.textContent?.includes('送出回答') || el.textContent?.includes('剖析')) {
+            const span = el.querySelector('span');
+            if (span) span.textContent = '送出';
+          }
+        });
       }
 
       // 3. 確保 0/30 計數器完美注入打字框內部的右下角
@@ -642,18 +649,17 @@ export default function InteractiveChatCoach({
               className="shrink-0 flex flex-col overflow-hidden lg:h-auto" 
               style={{ height: window.innerWidth >= 1024 ? `${typingBoxHeight}px` : 'auto' }}
             >
-              {/* ── CHANGE 3: 手機版 CSS 修正：按鈕組緊貼底部導覽列，消除多餘空白 ── */}
+              {/* ── CHANGE 3: 手機版 CSS 修正：精準 target TypingEngine DOM ── */}
               <style>{`
-                /* 1. 隱藏打字引擎內部的頂部四大數據卡片 */
-                #chat-typing-container .typing-stats-row, 
-                #chat-typing-container [class*="grid-cols-4"], 
-                #chat-typing-container [class*="space-x-4"],
-                #chat-typing-container [class*="stats"],
-                #chat-typing-container .grid.grid-cols-2 { 
-                  display: none !important; 
+                /* 1. 隱藏 TypingEngine 頂部 Stats 數據卡片區（grid 2cols/4cols）
+                      TypingEngine: <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5"> */
+                @media (max-width: 1023px) {
+                  #typing-engine-container > .grid {
+                    display: none !important;
+                  }
                 }
 
-                /* 2. 電腦版專屬高度約束自適應 */
+                /* 2. 電腦版專屬高度約束 */
                 @media (min-width: 1024px) {
                   #chat-main-feed-container {
                     height: clamp(520px, calc(100dvh - 200px), 860px) !important;
@@ -663,53 +669,85 @@ export default function InteractiveChatCoach({
                     height: 100% !important;
                     max-height: 100% !important;
                   }
-                  #chat-typing-container textarea,
-                  #chat-typing-container .typing-textarea-mock {
+                  #chat-typing-container textarea {
                     height: calc(100% - 56px) !important;
                     overflow-y: auto !important;
                     resize: none !important;
                   }
                 }
-                
-                /* 3. 手機行動版：讓重練/送出按鈕緊貼底部導覽列，消除多餘空白 */
+
+                /* 3. 手機版：TypingEngine 外框清零 padding（根本原因：p-4 sm:p-6 md:p-8）
+                      並讓按鈕列緊貼 textarea 下方 */
                 @media (max-width: 1023px) {
-                  /* 外層容器：解除高度限制，取消所有底部間距 */
-                  #chat-main-feed-container {
-                    height: auto !important;
-                    max-height: none !important;
-                    padding-bottom: 0px !important;
-                    margin-bottom: 0px !important;
+                  /* TypingEngine 最外框 */
+                  #typing-engine-container {
+                    padding: 8px 8px 4px 8px !important;
+                    background: transparent !important;
+                    border: none !important;
+                    border-radius: 0 !important;
                   }
-                  /* 打字容器本體：清零 margin，不留白 */
-                  #chat-typing-container {
-                    height: auto !important;
-                    margin-bottom: 0px !important;
-                    margin-top: 0px !important;
+
+                  /* Main Board (textarea 外層 relative div) */
+                  #typing-engine-container > div.relative {
+                    margin-bottom: 6px !important;
                   }
-                  /* 打字引擎最外層 div：清零 padding，讓按鈕自然沉底 */
-                  #chat-typing-container > div {
-                    padding-bottom: 0px !important;
-                    padding-top: 0px !important;
-                    gap: 0px !important;
-                  }
-                  /* 按鈕列（最後一個 div）：去掉任何上間距 */
-                  #chat-typing-container > div > div:last-child {
-                    margin-top: 0px !important;
-                    padding-top: 0px !important;
-                  }
-                  /* textarea 高度維持緊湊 */
-                  #chat-typing-container textarea,
-                  #chat-typing-container .typing-textarea-mock {
+
+                  /* free mode textarea */
+                  #free-typing-input {
                     height: 90px !important;
                     min-height: 80px !important;
                     overflow-y: auto !important;
                     resize: none !important;
+                    rows: 3 !important;
+                  }
+
+                  /* 字數統計那一行（textarea 下方）隱藏，已由 inner-word-counter 取代 */
+                  #typing-engine-container .relative > div:not(:has(textarea)) {
+                    display: none !important;
+                  }
+
+                  /* 按鈕列：flex-col → flex-row，高度壓緊 */
+                  #typing-engine-container > div.flex {
+                    flex-direction: row !important;
+                    gap: 6px !important;
+                    margin-top: 0 !important;
+                    padding-top: 0 !important;
+                  }
+
+                  /* 重練按鈕：縮小 */
+                  #typing-engine-container > div.flex > button:first-child {
+                    padding: 8px 12px !important;
+                    font-size: 13px !important;
+                    flex: 1 !important;
+                  }
+
+                  /* 送出按鈕：縮小 */
+                  #typing-engine-container > div.flex > button:last-child {
+                    padding: 8px 12px !important;
+                    font-size: 13px !important;
+                    flex: 2 !important;
+                  }
+
+                  /* 完成卡片：手機版壓縮 */
+                  #typing-engine-container > div.mt-5 {
+                    margin-top: 6px !important;
+                    padding: 10px !important;
+                  }
+
+                  /* chat-main-feed-container 外框清零底部 */
+                  #chat-main-feed-container {
+                    height: auto !important;
+                    max-height: none !important;
+                    padding-bottom: 0px !important;
+                  }
+
+                  #chat-typing-container {
+                    margin-bottom: 0px !important;
                   }
                 }
 
-                /* 4. 全域 textarea 字型 */
-                #chat-typing-container textarea,
-                #chat-typing-container .typing-textarea-mock {
+                /* 4. 全域 textarea 字型防止 iOS 縮放 */
+                #free-typing-input {
                   font-size: 16px !important;
                   line-height: 1.5 !important;
                 }
