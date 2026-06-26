@@ -130,7 +130,7 @@ export default function InteractiveChatCoach({
     };
   }, []);
 
-  // 🎯 核心強效改造指令：全方位清潔與重整元件內容
+  // 全方位巡檢與移除舊元素
   useEffect(() => {
     if (!hasStarted) return;
 
@@ -138,8 +138,7 @@ export default function InteractiveChatCoach({
       const container = document.getElementById('chat-typing-container');
       if (!container) return;
 
-      // --- 1. 把鉛筆圖示的已輸入0字列、0 words 徹底刪除 ---
-      // 尋找包含鉛筆圖標或特定字眼的整行區塊
+      // 1. 徹底隱藏任何夾雜舊字樣提示的區塊
       const allDivs = container.getElementsByTagName('div');
       for (let i = 0; i < allDivs.length; i++) {
         const div = allDivs[i];
@@ -149,7 +148,6 @@ export default function InteractiveChatCoach({
           div.textContent?.includes('words') ||
           div.querySelector('.lucide-pen-tool')
         ) {
-          // 如果這個 div 裡面不包含 textarea 或按鈕，就直接把它徹底隱藏或拔除
           if (!div.querySelector('textarea') && !div.querySelector('button')) {
             div.style.display = 'none';
             div.style.height = '0px';
@@ -159,7 +157,7 @@ export default function InteractiveChatCoach({
         }
       }
 
-      // --- 2. 處理按鈕改名（重練、送出） ---
+      // 2. 處理按鈕更名與即時同步
       const buttons = container.getElementsByTagName('button');
       if (buttons.length >= 2) {
         const btnLeft = buttons[0];
@@ -173,13 +171,13 @@ export default function InteractiveChatCoach({
         }
       }
 
-      // --- 3. 把 0/30 計數器完美塞入對話框（Textarea）右下角內部 ---
+      // 3. 確保 0/30 計數器完美注入打字框內部的右下角
       const textarea = container.querySelector('textarea');
       const textareaWrapper = textarea?.parentElement;
 
       if (textarea && textareaWrapper) {
         textareaWrapper.style.position = 'relative';
-        textarea.style.paddingBottom = '34px'; // 留出空隙給右下角的字數計數
+        textarea.style.paddingBottom = '34px';
 
         let innerCounter = textareaWrapper.querySelector('#inner-word-counter');
         if (!innerCounter) {
@@ -212,7 +210,7 @@ export default function InteractiveChatCoach({
         textarea.addEventListener('input', updateInnerCount);
         updateInnerCount();
       }
-    }, 100); // 縮短至 100 毫秒高速巡檢，確保任何狀態切換都能即時處理乾淨
+    }, 100);
 
     return () => clearInterval(interval);
   }, [hasStarted, chatHistory]);
@@ -423,7 +421,7 @@ export default function InteractiveChatCoach({
 
         {/* Chat Feed Box */}
         <div id="chat-main-feed-container" className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col shadow-xs"
-             style={{ minHeight: 0, height: 'clamp(520px, calc(100dvh - 200px), 860px)' }}>
+             style={{ minHeight: 0 }}>
 
           {/* Feed Header */}
           <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3 px-1 shrink-0">
@@ -621,7 +619,7 @@ export default function InteractiveChatCoach({
             <div ref={chatEndRef} />
           </div>
 
-          {/* 智慧拉伸控制條 (Resizer)：只在電腦版顯示 */}
+          {/* 智慧拉伸控制條 (Resizer)：電腦版保留 */}
           {hasStarted && (
             <div
               className="hidden lg:flex w-full h-2 my-1 bg-slate-200/50 hover:bg-emerald-600/30 active:bg-emerald-700/50 rounded-full cursor-row-resize items-center justify-center transition-colors select-none shrink-0"
@@ -642,8 +640,9 @@ export default function InteractiveChatCoach({
               className="shrink-0 flex flex-col overflow-hidden lg:h-auto" 
               style={{ height: window.innerWidth >= 1024 ? `${typingBoxHeight}px` : 'auto' }}
             >
+              {/* 精準防禦 CSS：最大化手機版提問視窗，並讓送出按鈕緊貼最底部 */}
               <style>{`
-                /* 隱藏打字引擎內部的頂部四大數據卡片 */
+                /* 1. 隱藏打字引擎內部的頂部四大數據卡片 */
                 #chat-typing-container .typing-stats-row, 
                 #chat-typing-container [class*="grid-cols-4"], 
                 #chat-typing-container [class*="space-x-4"],
@@ -652,8 +651,11 @@ export default function InteractiveChatCoach({
                   display: none !important; 
                 }
 
-                /* 電腦版高度約束自適應 */
+                /* 2. 電腦版專屬高度約束自適應 */
                 @media (min-width: 1024px) {
+                  #chat-main-feed-container {
+                    height: clamp(520px, calc(100dvh - 200px), 860px) !important;
+                  }
                   #chat-typing-container,
                   #chat-typing-container > div {
                     height: 100% !important;
@@ -667,14 +669,19 @@ export default function InteractiveChatCoach({
                   }
                 }
                 
-                /* 手機行動版專屬優化 */
+                /* 3. 手機行動版完美優化：最大化提問視窗，並讓送出按鈕緊密貼地 */
                 @media (max-width: 1023px) {
                   #chat-main-feed-container {
                     height: auto !important;
-                    max-height: calc(100dvh - 120px) !important;
+                    max-height: none !important; /* 解除高度閹割，由網頁原生滾動與元件彈性撐開 */
+                    padding-bottom: 0px !important; /* 拔除內距，讓打字容器自然下沉 */
                   }
                   #chat-typing-container {
                     height: auto !important;
+                    margin-bottom: -12px !important; /* 強制外框下壓，消除底部多餘空隙 */
+                  }
+                  #chat-typing-container > div {
+                    padding-bottom: 2px !important; /* 讓最底部的送出按鈕極致貼近導覽列 */
                   }
                   #chat-typing-container textarea,
                   #chat-typing-container .typing-textarea-mock {
