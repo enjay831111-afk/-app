@@ -508,7 +508,11 @@ export default function InteractiveChatCoach({
                   <span className="text-xs text-slate-400 font-bold block">AI 教練正在分析您的句子...</span>
                   <div className="flex space-x-1.5">
                     {[0, 150, 300].map(delay => (
-                      <div key={delay} className="w-2.5 h-2.5 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
+                      <div 
+                        key={delay} 
+                        className="w-2.5 h-2.5 bg-emerald-600 rounded-full animate-bounce" 
+                        style={{ animationDelay: `${delay}ms` }}
+                       ></div>
                     ))}
                   </div>
                 </div>
