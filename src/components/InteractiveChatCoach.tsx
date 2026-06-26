@@ -540,6 +540,5 @@ export default function InteractiveChatCoach({
         </div>
       </div>
     </div>
-  </div>
   );
 }
