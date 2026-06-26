@@ -506,38 +506,35 @@ export default function InteractiveChatCoach({
                 <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-extrabold shrink-0">AI</div>
                 <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-2xs space-y-2">
                   <span className="text-xs text-slate-400 font-bold block">AI 教練正在分析您的句子...</span>
-                  <div className="flex space-x-1.5">
-                    {[0, 150, 300].map(delay => (
-                      <div 
-                        key={delay} 
-                        className="w-2.5 h-2.5 bg-emerald-600 rounded-full animate-bounce" 
-                        style={{ animationDelay: `${delay}ms` }}
-                       ></div>
-                    ))}
-                  </div>
+                              <div className="flex space-x-1.5">
+              {[0, 150, 300].map(delay => (
+                <div
+                  key={delay}
+                  className="w-2.5 h-2.5 bg-emerald-600 rounded-full animate-bounce"
+                  style={{ animationDelay: delay + 'ms' }}
                 </div>
-              </div>
-            )}
+            </div>
 
-            <div ref={chatEndRef} />
           </div>
 
-          {/* Typing input */}
-          {hasStarted && (
-            <div className="border-t border-slate-100 pt-3 shrink-0">
-              <TypingEngine
-                mode="free"
-                onComplete={(wpm, accuracy, text) => {
-                  handleTypingComplete(wpm, accuracy);
-                  handleSubmitMessage(text);
-                }}
-                minWordsForComplete={30}
-                actionButtonLabel="送出回答並進行剖析"
-                placeholder="在此輸入您的英文回覆... 試著寫滿 30 個單字以上！"
-              />
-            </div>
-          )}
+          <div ref={chatEndRef} />
         </div>
+
+        {/* Typing input */}
+        {hasStarted && (
+          <div className="border-t border-slate-100 pt-3 shrink-0">
+            <TypingEngine
+              mode="free"
+              onComplete={(wpm, accuracy, text) => {
+                handleTypingComplete(wpm, accuracy);
+                handleSubmitMessage(text);
+              }}
+              minWordsForComplete={30}
+              actionButtonLabel="送出回答並進行剖析"
+              placeholder="在此輸入您的英文回覆... 試著寫滿 30 個單字以上！"
+            />
+          </div>
+        )}
       </div>
     </div>
   </div>
