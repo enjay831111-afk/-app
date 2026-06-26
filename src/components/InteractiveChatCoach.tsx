@@ -48,8 +48,8 @@ export default function InteractiveChatCoach({
   const [isRegenerating, setIsRegenerating]       = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // ⚡ 專門用來控制下方打字輸入筐高度的狀態 (預設 240px)
-  const [typingBoxHeight, setTypingBoxHeight] = useState(240);
+  // ⚡ 電腦版打字輸入筐預設高度 200px
+  const [typingBoxHeight, setTypingBoxHeight] = useState(200);
   const isDraggingRef = useRef(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -110,21 +110,18 @@ export default function InteractiveChatCoach({
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistory, isPending]);
 
-  // ⚡ 處理滑鼠拖拽拉伸高度的事件監聽
+  // ⚡ 電腦版專用：滑鼠拖拽拉伸高度
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDraggingRef.current) return;
       
-      // 取得整體佈局容器的底部位置，用來動態計算滑鼠拉動的相對高度
       const layoutContainer = document.getElementById('chat-main-feed-container');
       if (!layoutContainer) return;
 
       const containerRect = layoutContainer.getBoundingClientRect();
-      // 計算新的打字框高度 = 容器底部減去當前滑鼠的 Y 座標
       const newHeight = containerRect.bottom - e.clientY;
       
-      // 限制拖拽的最高與最低範圍，避免拉到看不見
-      if (newHeight > 100 && newHeight < 550) {
+      if (newHeight > 120 && newHeight < 500) {
         setTypingBoxHeight(newHeight);
       }
     };
@@ -344,7 +341,7 @@ export default function InteractiveChatCoach({
           <SidebarContent />
         </div>
 
-        {/* Chat Feed Box (⚡ 這裡給予固定外框，讓內部 Flex 動態撐開與縮小) */}
+        {/* Chat Feed Box */}
         <div id="chat-main-feed-container" className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col shadow-xs"
              style={{ minHeight: 0, height: 'clamp(520px, calc(100dvh - 200px), 860px)' }}>
 
@@ -368,7 +365,7 @@ export default function InteractiveChatCoach({
             )}
           </div>
 
-          {/* Scrollable messages (⚡ 這裡使用 flex-1，會隨著下方打字框的大小被拉動，自動長大或縮小) */}
+          {/* Scrollable messages */}
           <div className="chat-messages-scroll space-y-5 pr-1 mb-1 flex-1 overflow-y-auto" style={{ minHeight: '60px' }}>
             {!hasStarted ? (
               <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 p-8 space-y-3">
@@ -544,10 +541,10 @@ export default function InteractiveChatCoach({
             <div ref={chatEndRef} />
           </div>
 
-          {/* ⚡ 智慧拉伸控制條 (Resizer)：可以按住此處上下拖曳調整大小 */}
+          {/* ⚡ 智慧拉伸控制條 (Resizer)：只在電腦版 (lg:flex) 顯示，手機版直接隱藏不佔空間 */}
           {hasStarted && (
             <div
-              className="w-full h-2.5 my-1 bg-slate-200/50 hover:bg-emerald-600/30 active:bg-emerald-700/50 rounded-full cursor-row-resize flex items-center justify-center transition-colors select-none shrink-0"
+              className="hidden lg:flex w-full h-2 my-1 bg-slate-200/50 hover:bg-emerald-600/30 active:bg-emerald-700/50 rounded-full cursor-row-resize items-center justify-center transition-colors select-none shrink-0"
               onMouseDown={(e) => {
                 isDraggingRef.current = true;
                 document.body.style.cursor = 'row-resize';
@@ -559,43 +556,63 @@ export default function InteractiveChatCoach({
             </div>
           )}
 
-          {/* Typing input (⚡ 這裡的高度直接受 typingBoxHeight 狀態控制，完美支援拖曳) */}
+          {/* Typing input */}
           {hasStarted && (
             <div 
-              className="shrink-0 flex flex-col overflow-hidden" 
-              style={{ height: `${typingBoxHeight}px` }}
+              className="shrink-0 flex flex-col overflow-hidden lg:h-auto" 
+              style={{ height: window.innerWidth >= 1024 ? `${typingBoxHeight}px` : 'auto' }}
             >
-              {/* 透過精準樣式注入：完美隱藏數據列，並讓內部的 textarea 與外殼同高 */}
+              {/* 透過精準樣式注入：手機版自動撐開高度，按鈕永不遺失；電腦版完美支援高度拖曳 */}
               <style>{`
-                /* 1. 精確隱藏打字引擎內部的數據顯示列 (WPM, 正確率, 字數統計, 計時器) */
+                /* 1. 精確隱藏打字引擎內部的數據顯示列 */
                 #chat-typing-container .typing-stats-row, 
-                #chat-typing-container [class*="grid-cols-4"], 
-                #chat-typing-container [class*="space-x-4"],
-                #chat-typing-container [class*="stats"] { 
+                #chat-typing-container [class*=\"grid-cols-4\"], 
+                #chat-typing-container [class*=\"space-x-4\"],
+                #chat-typing-container [class*=\"stats\"] { 
                   display: none !important; 
                 }
 
-                /* 2. 移除 TypingEngine 的預設固定高度限制，使其 100% 填滿我們拖曳出來的外殼 */
-                #chat-typing-container,
-                #chat-typing-container > div {
-                  height: 100% !important;
-                  max-height: 100% !important;
+                /* 2. 電腦版專屬高度約束 (RWD 覆蓋) */
+                @media (min-width: 1024px) {
+                  #chat-typing-container,
+                  #chat-typing-container > div {
+                    height: 100% !important;
+                    max-height: 100% !important;
+                  }
+                  #chat-typing-container textarea,
+                  #chat-typing-container .typing-textarea-mock {
+                    height: calc(100% - 56px) !important; /* 扣除送出按鈕的高度 */
+                    overflow-y: auto !important;
+                    resize: none !important;
+                  }
                 }
                 
-                /* 3. 讓打字框自動撐滿，並允許自適應文字捲動 */
+                /* 3. 手機行動版專屬優化：解除固定高度，確保「重新練習與送出回答」隨時可見 */
+                @media (max-width: 1023px) {
+                  #chat-main-feed-container {
+                    height: auto !important;
+                    max-height: calc(100dvh - 120px) !important;
+                  }
+                  #chat-typing-container {
+                    height: auto !important;
+                  }
+                  #chat-typing-container textarea,
+                  #chat-typing-container .typing-textarea-mock {
+                    height: 90px !important; /* 手機版輸入框給予適當的固定精簡高度，騰出空間給按鈕 */
+                    min-height: 80px !important;
+                    overflow-y: auto !important;
+                    resize: none !important;
+                  }
+                }
+
                 #chat-typing-container textarea,
                 #chat-typing-container .typing-textarea-mock {
-                  height: calc(100% - 60px) !important; /* 扣除底部送出按鈕的高度 */
-                  min-height: unset !important;
-                  max-height: unset !important;
-                  overflow-y: auto !important;
                   font-size: 16px !important;
-                  line-height: 1.6 !important;
-                  resize: none !important; /* 關閉右下角原生小按鈕，改由我們上方的控制條拉伸 */
+                  line-height: 1.5 !important;
                 }
               `}</style>
               
-              <div id="chat-typing-container" className="w-full flex-1">
+              <div id="chat-typing-container" className="w-full">
                 <TypingEngine
                   mode="free"
                   onComplete={(wpm, accuracy, text) => {
