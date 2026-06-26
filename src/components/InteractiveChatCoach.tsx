@@ -46,12 +46,13 @@ export default function InteractiveChatCoach({
   const [customPromptTitle, setCustomPromptTitle] = useState('');
   const [customPromptDesc, setCustomPromptDesc]   = useState('');
   const [isRegenerating, setIsRegenerating]       = useState(false);
-  // Mobile: sidebar drawer open state
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // 可調式高度狀態：控制上方對話紀錄區的垂直高度 (預設 480 像素)
-  const [chatFeedHeight, setChatFeedHeight]     = useState(480);
-  const isResizingRef = useRef(false);
+  // ─── 拖曳高度相關 State 與 Ref ───
+  const [chatFeedHeight, setChatFeedHeight] = useState(450); // 預設歷史訊息對話框高度為 450px
+  const isDraggingRef = useRef(false);
+  const startYRef = useRef(0);
+  const startHeightRef = useRef(0);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -68,29 +69,28 @@ export default function InteractiveChatCoach({
     try { localStorage.setItem('english_typing_coach_active_topic', val); } catch (e) { console.error(e); }
   };
 
-  // 滑鼠拖拽高度事件處理
+  // ─── 處理拖曳事件監聽 ───
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
-    isResizingRef.current = true;
-    document.body.style.cursor = 'ns-resize';
+    isDraggingRef.current = true;
+    startYRef.current = e.clientY;
+    startHeightRef.current = chatFeedHeight;
+    document.body.style.cursor = 'row-resize';
     document.body.style.userSelect = 'none';
   };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizingRef.current) return;
-      const chatLayout = document.getElementById('chat-feed-container');
-      if (chatLayout) {
-        const rect = chatLayout.getBoundingClientRect();
-        // 計算滑鼠當前位置相對於容器頂部的距離，並限制在合理區間內 (最低 250px，最高 900px)
-        const newHeight = Math.max(250, Math.min(900, e.clientY - rect.top));
-        setChatFeedHeight(newHeight);
-      }
+      if (!isDraggingRef.current) return;
+      const deltaY = e.clientY - startYRef.current;
+      // 限制拖曳高度在 250px 到 750px 之間，防止拉到不見
+      const newHeight = Math.max(250, Math.min(750, startHeightRef.current + deltaY));
+      setChatFeedHeight(newHeight);
     };
 
     const handleMouseUp = () => {
-      if (isResizingRef.current) {
-        isResizingRef.current = false;
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
       }
@@ -102,7 +102,7 @@ export default function InteractiveChatCoach({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, []);
+  }, [chatFeedHeight]);
 
   const handleRegenerateInitialQuestion = async () => {
     if (isRegenerating || isPending) return;
@@ -151,7 +151,7 @@ export default function InteractiveChatCoach({
     updateCurrentPrompt(prompt);
     updateHasStarted(true);
     updateActiveTopicTitle(title);
-    setSidebarOpen(false); // close drawer on mobile after picking
+    setSidebarOpen(false);
   };
 
   const handleTypingComplete = (finalWpm: number, finalAccuracy: number) => {
@@ -228,7 +228,6 @@ export default function InteractiveChatCoach({
 
   const isFriendMode = turnCount % 3 === 0 && turnCount > 0;
 
-  // ── Sidebar content (shared between desktop and mobile drawer) ──────
   const SidebarContent = () => (
     <div className="space-y-5 h-full flex flex-col">
       <div>
@@ -283,7 +282,6 @@ export default function InteractiveChatCoach({
         </div>
       )}
 
-      {/* Mode guide */}
       <div className="bg-gradient-to-br from-emerald-950/5 to-amber-500/5 rounded-2xl p-4 border border-emerald-100/50 space-y-3 mt-auto">
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4 text-amber-500" />
@@ -328,9 +326,7 @@ export default function InteractiveChatCoach({
       {/* ── Mobile drawer overlay ────────────────────────── */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
-          {/* Sheet */}
           <div className="relative bg-white rounded-t-3xl p-5 animate-slideUp max-h-[80dvh] flex flex-col"
                style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}>
             <div className="flex items-center justify-between mb-4">
@@ -355,11 +351,11 @@ export default function InteractiveChatCoach({
         </div>
 
         {/* Chat feed + typing box */}
-        <div id="chat-feed-container" className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col shadow-xs"
+        <div className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col shadow-xs"
              style={{ minHeight: 0 }}>
 
           {/* Feed Header */}
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3 px-1 shrink-0">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3 px-1">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
               <div>
@@ -378,8 +374,11 @@ export default function InteractiveChatCoach({
             )}
           </div>
 
-          {/* Scrollable messages - 高度改由狀態動態控制 */}
-          <div className="chat-messages-scroll space-y-5 pr-1 overflow-y-auto" style={{ height: `${chatFeedHeight}px` }}>
+          {/* ─── 可調整高度的歷史對話內容區 ─── */}
+          <div 
+            className="chat-messages-scroll space-y-5 pr-1 overflow-y-auto"
+            style={{ height: `${chatFeedHeight}px`, minHeight: '200px' }}
+          >
             {!hasStarted ? (
               <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 p-8 space-y-3">
                 <MessageSquare className="h-10 w-10 text-emerald-700/60" />
@@ -499,13 +498,11 @@ export default function InteractiveChatCoach({
                               </div>
                             )}
 
-                            {/* Native Speaker Upgrades */}
                             <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-2xs space-y-4">
                               <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
                                 <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" />
                                 <span className="text-xs font-extrabold text-slate-800">⭐ Native Speaker Upgrade (母語表達三階進化)</span>
                               </div>
-                              {/* Stack vertically on mobile, 3-col on md+ */}
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {[
                                   { label: '⭐ Understandable', labelColor: 'text-slate-400', text: msg.analysis.understandableEnglish, key: 'upgrade_1', bg: 'bg-slate-50 border-slate-100' },
@@ -558,20 +555,22 @@ export default function InteractiveChatCoach({
             <div ref={chatEndRef} />
           </div>
 
-          {/* ── 核心功能：新增可上下拖曳的高度分隔線 ────────── */}
+          {/* ─── 🛠️ 新增：可拖曳灰色拉桿 (Resize Slider) ─── */}
           {hasStarted && (
             <div 
               onMouseDown={handleMouseDown}
-              className="group w-full h-3 my-1 flex items-center justify-center cursor-ns-resize hover:bg-slate-200/50 rounded-md transition-all duration-150 shrink-0 select-none"
-              title="上下拖曳可調整對話框高度"
+              className="w-full h-5 my-1 flex items-center justify-center cursor-row-resize hover:bg-slate-200/50 active:bg-slate-300/80 rounded-md transition-colors group select-none shrink-0"
+              title="上下拖曳可調整對話框大小"
             >
-              <GripHorizontal className="h-4 w-4 text-slate-300 group-hover:text-slate-500 transition-colors" />
+              <div className="w-16 h-1 bg-slate-300 group-hover:bg-slate-400 rounded-full flex items-center justify-center">
+                <GripHorizontal className="h-3 w-3 text-slate-400 group-hover:text-slate-600" />
+              </div>
             </div>
           )}
 
           {/* Typing input */}
           {hasStarted && (
-            <div className="border-t border-slate-100 pt-1 shrink-0">
+            <div className="border-t border-slate-100 pt-2 shrink-0">
               <TypingEngine
                 mode="free"
                 onComplete={(wpm, accuracy, text) => {
