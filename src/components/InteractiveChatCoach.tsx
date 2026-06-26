@@ -23,7 +23,7 @@ const PRESET_TOPICS = [
   { title: "💻 我的職涯與科技 (Career & Tech)",        prompt: "What are your career goals, and how do you feel about the rise of Artificial Intelligence in your industry?" },
   { title: "✈️ 旅遊與冒險 (Travel Adventures)",        prompt: "Describe your dream travel destination. What would you do there, and why does this place appeal to you so much?" },
   { title: "☕ 日常生活與習慣 (Daily Life)",             prompt: "Describe your perfect morning routine. How does it make you feel, and why is starting the day right important to you?" },
-  { title: "🎬 興趣與文化 (Hobbies & Culture)",         prompt: "What is a movie, book, or show that has deeply influenced you? What was it about, and what did you learn from it?" }
+  { title: "🎬 興趣與 culture (Hobbies & Culture)",     prompt: "What is a movie, book, or show that has deeply influenced you? What was it about, and what did you learn from it?" }
 ];
 
 interface InlinePracticeState {
@@ -46,14 +46,13 @@ export default function InteractiveChatCoach({
   const [customPromptTitle, setCustomPromptTitle] = useState('');
   const [customPromptDesc, setCustomPromptDesc]   = useState('');
   const [isRegenerating, setIsRegenerating]       = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen]             = useState(false);
 
-  // ─── 拖曳高度相關 State 與 Ref ───
-  const [chatFeedHeight, setChatFeedHeight] = useState(450); // 預設歷史訊息對話框高度為 450px
+  // ─── 修正版：高度狀態與事件追蹤 ───
+  const [chatFeedHeight, setChatFeedHeight] = useState(420); 
   const isDraggingRef = useRef(false);
   const startYRef = useRef(0);
   const startHeightRef = useRef(0);
-
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const updateCurrentPrompt = (val: string) => {
@@ -69,7 +68,7 @@ export default function InteractiveChatCoach({
     try { localStorage.setItem('english_typing_coach_active_topic', val); } catch (e) { console.error(e); }
   };
 
-  // ─── 處理拖曳事件監聽 ───
+  // ─── 滑鼠拖曳精準控制 ───
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     isDraggingRef.current = true;
@@ -83,8 +82,8 @@ export default function InteractiveChatCoach({
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDraggingRef.current) return;
       const deltaY = e.clientY - startYRef.current;
-      // 限制拖曳高度在 250px 到 750px 之間，防止拉到不見
-      const newHeight = Math.max(250, Math.min(750, startHeightRef.current + deltaY));
+      // 限制拖曳區間在 220px 到 850px 之間
+      const newHeight = Math.max(220, Math.min(850, startHeightRef.current + deltaY));
       setChatFeedHeight(newHeight);
     };
 
@@ -304,7 +303,7 @@ export default function InteractiveChatCoach({
   );
 
   return (
-    <div className="flex flex-col gap-4" id="chat-coach-layout">
+    <div className="flex flex-col gap-4 w-full" id="chat-coach-layout">
 
       {/* ── Mobile: topic bar + drawer trigger ──────────── */}
       <div className="lg:hidden flex items-center gap-2">
@@ -343,19 +342,18 @@ export default function InteractiveChatCoach({
       )}
 
       {/* ── Main layout ─────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" style={{ minHeight: 0 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
 
         {/* Desktop sidebar */}
         <div className="hidden lg:flex lg:col-span-1 bg-white border border-slate-100 rounded-3xl p-5 shadow-xs flex-col">
           <SidebarContent />
         </div>
 
-        {/* Chat feed + typing box */}
-        <div className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col shadow-xs"
-             style={{ minHeight: 0 }}>
+        {/* 修正：移除了 h-full 與限制，改用 h-auto 確保內部組件可以自由拉伸長高 */}
+        <div id="chat-feed-container" className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col shadow-xs h-auto">
 
           {/* Feed Header */}
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3 px-1">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3 px-1 shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
               <div>
@@ -374,10 +372,10 @@ export default function InteractiveChatCoach({
             )}
           </div>
 
-          {/* ─── 可調整高度的歷史對話內容區 ─── */}
+          {/* 修正：加入 flex-shrink-0 阻斷擠壓，改用動態的真實高度 */}
           <div 
-            className="chat-messages-scroll space-y-5 pr-1 overflow-y-auto"
-            style={{ height: `${chatFeedHeight}px`, minHeight: '200px' }}
+            className="chat-messages-scroll space-y-5 pr-1 overflow-y-auto flex-shrink-0"
+            style={{ height: `${chatFeedHeight}px` }}
           >
             {!hasStarted ? (
               <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 p-8 space-y-3">
@@ -555,22 +553,22 @@ export default function InteractiveChatCoach({
             <div ref={chatEndRef} />
           </div>
 
-          {/* ─── 🛠️ 新增：可拖曳灰色拉桿 (Resize Slider) ─── */}
+          {/* ─── 🛠️ 灰色拉桿 (已修正：大幅提升靈敏度並優化拖曳阻抗) ─── */}
           {hasStarted && (
             <div 
               onMouseDown={handleMouseDown}
-              className="w-full h-5 my-1 flex items-center justify-center cursor-row-resize hover:bg-slate-200/50 active:bg-slate-300/80 rounded-md transition-colors group select-none shrink-0"
+              className="w-full h-6 my-1.5 flex items-center justify-center cursor-row-resize hover:bg-slate-200/60 active:bg-slate-300/80 rounded-lg transition-colors group select-none shrink-0"
               title="上下拖曳可調整對話框大小"
             >
-              <div className="w-16 h-1 bg-slate-300 group-hover:bg-slate-400 rounded-full flex items-center justify-center">
-                <GripHorizontal className="h-3 w-3 text-slate-400 group-hover:text-slate-600" />
+              <div className="w-20 h-1 bg-slate-300 group-hover:bg-slate-400 rounded-full flex items-center justify-center transition-colors">
+                <GripHorizontal className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
               </div>
             </div>
           )}
 
           {/* Typing input */}
           {hasStarted && (
-            <div className="border-t border-slate-100 pt-2 shrink-0">
+            <div className="border-t border-slate-100 pt-3 shrink-0">
               <TypingEngine
                 mode="free"
                 onComplete={(wpm, accuracy, text) => {
