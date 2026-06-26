@@ -23,7 +23,7 @@ const PRESET_TOPICS = [
   { title: "💻 我的職涯與科技 (Career & Tech)",        prompt: "What are your career goals, and how do you feel about the rise of Artificial Intelligence in your industry?" },
   { title: "✈️ 旅遊與冒險 (Travel Adventures)",        prompt: "Describe your dream travel destination. What would you do there, and why does this place appeal to you so much?" },
   { title: "☕ 日常生活與習慣 (Daily Life)",             prompt: "Describe your perfect morning routine. How does it make you feel, and why is starting the day right important to you?" },
-  { title: "🎬 興趣與 culture (Hobbies & Culture)",     prompt: "What is a movie, book, or show that has deeply influenced you? What was it about, and what did you learn from it?" }
+  { title: "🎬 興趣與文化 (Hobbies & Culture)",         prompt: "What is a movie, book, or show that has deeply influenced you? What was it about, and what did you learn from it?" }
 ];
 
 interface InlinePracticeState {
@@ -48,7 +48,7 @@ export default function InteractiveChatCoach({
   const [isRegenerating, setIsRegenerating]       = useState(false);
   const [sidebarOpen, setSidebarOpen]             = useState(false);
 
-  // ─── 修正版：高度狀態與事件追蹤 ───
+  // ─── 終極版：使用動態行內高度控制 ───
   const [chatFeedHeight, setChatFeedHeight] = useState(420); 
   const isDraggingRef = useRef(false);
   const startYRef = useRef(0);
@@ -68,9 +68,10 @@ export default function InteractiveChatCoach({
     try { localStorage.setItem('english_typing_coach_active_topic', val); } catch (e) { console.error(e); }
   };
 
-  // ─── 滑鼠拖曳精準控制 ───
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
+  // ─── 終極版：全域指標拖曳事件監聽 ───
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // 啟用指標鎖定，滑鼠即使移出瀏覽器視窗外也能繼續捕捉移動
+    e.currentTarget.setPointerCapture(e.pointerId);
     isDraggingRef.current = true;
     startYRef.current = e.clientY;
     startHeightRef.current = chatFeedHeight;
@@ -78,30 +79,22 @@ export default function InteractiveChatCoach({
     document.body.style.userSelect = 'none';
   };
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDraggingRef.current) return;
-      const deltaY = e.clientY - startYRef.current;
-      // 限制拖曳區間在 220px 到 850px 之間
-      const newHeight = Math.max(220, Math.min(850, startHeightRef.current + deltaY));
-      setChatFeedHeight(newHeight);
-    };
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    const deltaY = e.clientY - startYRef.current;
+    // 限制拖曳範圍在 200px 至 900px 之間
+    const newHeight = Math.max(200, Math.min(900, startHeightRef.current + deltaY));
+    setChatFeedHeight(newHeight);
+  };
 
-    const handleMouseUp = () => {
-      if (isDraggingRef.current) {
-        isDraggingRef.current = false;
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-      }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [chatFeedHeight]);
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDraggingRef.current) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+      isDraggingRef.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+  };
 
   const handleRegenerateInitialQuestion = async () => {
     if (isRegenerating || isPending) return;
@@ -305,7 +298,7 @@ export default function InteractiveChatCoach({
   return (
     <div className="flex flex-col gap-4 w-full" id="chat-coach-layout">
 
-      {/* ── Mobile: topic bar + drawer trigger ──────────── */}
+      {/* ── Mobile: topic bar ──────────── */}
       <div className="lg:hidden flex items-center gap-2">
         <button
           onClick={() => setSidebarOpen(true)}
@@ -349,8 +342,8 @@ export default function InteractiveChatCoach({
           <SidebarContent />
         </div>
 
-        {/* 修正：移除了 h-full 與限制，改用 h-auto 確保內部組件可以自由拉伸長高 */}
-        <div id="chat-feed-container" className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col shadow-xs h-auto">
+        {/* 核心大容器：h-auto 取消外部壓縮比例阻抗 */}
+        <div id="chat-feed-container" className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col shadow-xs h-auto overflow-hidden">
 
           {/* Feed Header */}
           <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3 px-1 shrink-0">
@@ -372,10 +365,10 @@ export default function InteractiveChatCoach({
             )}
           </div>
 
-          {/* 修正：加入 flex-shrink-0 阻斷擠壓，改用動態的真實高度 */}
+          {/* 歷史訊息區：強迫採用指定高度且不可收縮 */}
           <div 
-            className="chat-messages-scroll space-y-5 pr-1 overflow-y-auto flex-shrink-0"
-            style={{ height: `${chatFeedHeight}px` }}
+            className="chat-messages-scroll space-y-5 pr-1 overflow-y-auto block"
+            style={{ height: `${chatFeedHeight}px`, minHeight: `${chatFeedHeight}px`, flex: '0 0 auto' }}
           >
             {!hasStarted ? (
               <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 p-8 space-y-3">
@@ -553,15 +546,18 @@ export default function InteractiveChatCoach({
             <div ref={chatEndRef} />
           </div>
 
-          {/* ─── 🛠️ 灰色拉桿 (已修正：大幅提升靈敏度並優化拖曳阻抗) ─── */}
+          {/* ─── 終極指標事件拉桿：完美防止拖曳斷聯 ─── */}
           {hasStarted && (
             <div 
-              onMouseDown={handleMouseDown}
-              className="w-full h-6 my-1.5 flex items-center justify-center cursor-row-resize hover:bg-slate-200/60 active:bg-slate-300/80 rounded-lg transition-colors group select-none shrink-0"
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              className="w-full h-6 my-2 flex items-center justify-center cursor-row-resize hover:bg-slate-200/80 active:bg-slate-300 rounded-lg transition-colors group select-none shrink-0 touch-none"
               title="上下拖曳可調整對話框大小"
+              style={{ contentVisibility: 'auto' }}
             >
-              <div className="w-20 h-1 bg-slate-300 group-hover:bg-slate-400 rounded-full flex items-center justify-center transition-colors">
-                <GripHorizontal className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
+              <div className="w-24 h-1.5 bg-slate-300 group-hover:bg-slate-400 group-active:bg-slate-500 rounded-full flex items-center justify-center transition-colors">
+                <GripHorizontal className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
               </div>
             </div>
           )}
