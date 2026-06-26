@@ -3,7 +3,7 @@ import { ChatMessage, ErrorCategory, WritingError, CATEGORY_CHINESE } from '../t
 import {
   Sparkles, MessageSquare, ShieldAlert, Award, ArrowUpRight,
   Send, BrainCircuit, RefreshCw, MessageCircle, BadgeHelp, CheckCircle,
-  Flame, Keyboard, X, ChevronDown
+  Flame, Keyboard, X, ChevronDown, GripHorizontal
 } from 'lucide-react';
 import TypingEngine from './TypingEngine';
 
@@ -49,6 +49,10 @@ export default function InteractiveChatCoach({
   // Mobile: sidebar drawer open state
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // 可調式高度狀態：控制上方對話紀錄區的垂直高度 (預設 480 像素)
+  const [chatFeedHeight, setChatFeedHeight]     = useState(480);
+  const isResizingRef = useRef(false);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const updateCurrentPrompt = (val: string) => {
@@ -63,6 +67,42 @@ export default function InteractiveChatCoach({
     setActiveTopicTitle(val);
     try { localStorage.setItem('english_typing_coach_active_topic', val); } catch (e) { console.error(e); }
   };
+
+  // 滑鼠拖拽高度事件處理
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingRef.current = true;
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizingRef.current) return;
+      const chatLayout = document.getElementById('chat-feed-container');
+      if (chatLayout) {
+        const rect = chatLayout.getBoundingClientRect();
+        // 計算滑鼠當前位置相對於容器頂部的距離，並限制在合理區間內 (最低 250px，最高 900px)
+        const newHeight = Math.max(250, Math.min(900, e.clientY - rect.top));
+        setChatFeedHeight(newHeight);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (isResizingRef.current) {
+        isResizingRef.current = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   const handleRegenerateInitialQuestion = async () => {
     if (isRegenerating || isPending) return;
@@ -315,11 +355,11 @@ export default function InteractiveChatCoach({
         </div>
 
         {/* Chat feed + typing box */}
-        <div className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col shadow-xs"
-             style={{ minHeight: 0, height: 'clamp(480px, calc(100dvh - 200px), 820px)' }}>
+        <div id="chat-feed-container" className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col shadow-xs"
+             style={{ minHeight: 0 }}>
 
           {/* Feed Header */}
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3 px-1">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3 px-1 shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
               <div>
@@ -338,8 +378,8 @@ export default function InteractiveChatCoach({
             )}
           </div>
 
-          {/* Scrollable messages */}
-          <div className="chat-messages-scroll space-y-5 pr-1 mb-3">
+          {/* Scrollable messages - 高度改由狀態動態控制 */}
+          <div className="chat-messages-scroll space-y-5 pr-1 overflow-y-auto" style={{ height: `${chatFeedHeight}px` }}>
             {!hasStarted ? (
               <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 p-8 space-y-3">
                 <MessageSquare className="h-10 w-10 text-emerald-700/60" />
@@ -508,11 +548,7 @@ export default function InteractiveChatCoach({
                   <span className="text-xs text-slate-400 font-bold block">AI 教練正在分析您的句子...</span>
                   <div className="flex space-x-1.5">
                     {[0, 150, 300].map(delay => (
-                      <div 
-                        key={delay} 
-                        className="w-2.5 h-2.5 bg-emerald-600 rounded-full animate-bounce" 
-                        style={{ animationDelay: delay + 'ms' }}
-                      ></div>
+                      <div key={delay} className="w-2.5 h-2.5 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
                     ))}
                   </div>
                 </div>
@@ -522,9 +558,20 @@ export default function InteractiveChatCoach({
             <div ref={chatEndRef} />
           </div>
 
+          {/* ── 核心功能：新增可上下拖曳的高度分隔線 ────────── */}
+          {hasStarted && (
+            <div 
+              onMouseDown={handleMouseDown}
+              className="group w-full h-3 my-1 flex items-center justify-center cursor-ns-resize hover:bg-slate-200/50 rounded-md transition-all duration-150 shrink-0 select-none"
+              title="上下拖曳可調整對話框高度"
+            >
+              <GripHorizontal className="h-4 w-4 text-slate-300 group-hover:text-slate-500 transition-colors" />
+            </div>
+          )}
+
           {/* Typing input */}
           {hasStarted && (
-            <div className="border-t border-slate-100 pt-3 shrink-0">
+            <div className="border-t border-slate-100 pt-1 shrink-0">
               <TypingEngine
                 mode="free"
                 onComplete={(wpm, accuracy, text) => {
