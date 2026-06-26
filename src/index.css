@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  --bg-app: #FBFDFD;
+  --bg-card: #ffffff;
+  --bg-card-sub: #f8fafc;
+  --border-card: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  /* Safe area for notch / home bar */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.dark {
+  --bg-app: #060c0b;
+  --bg-card: #0f1a18;
+  --bg-card-sub: #162624;
+  --border-card: #1c3330;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+}
+
+/* ─── Dark Theme Overrides ──────────────────────────────── */
+.dark-theme-override .bg-white {
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+.dark-theme-override .bg-slate-50 {
+  background-color: var(--bg-card-sub) !important;
+}
+.dark-theme-override .bg-slate-100 {
+  background-color: #1a2e2b !important;
+}
+.dark-theme-override .bg-\[#FBFDFD\] {
+  background-color: var(--bg-app) !important;
+}
+
+/* Borders */
+.dark-theme-override .border-slate-50,
+.dark-theme-override .border-slate-100,
+.dark-theme-override .border-slate-200 {
+  border-color: var(--border-card) !important;
+}
+
+/* Text */
+.dark-theme-override .text-slate-900,
+.dark-theme-override .text-slate-800,
+.dark-theme-override .text-slate-700 {
+  color: var(--text-primary) !important;
+}
+.dark-theme-override .text-slate-600,
+.dark-theme-override .text-slate-500 {
+  color: var(--text-secondary) !important;
+}
+.dark-theme-override .text-slate-400 {
+  color: var(--text-muted) !important;
+}
+
+/* Input / textarea backgrounds */
+.dark-theme-override input:not([type="range"]),
+.dark-theme-override textarea,
+.dark-theme-override select {
+  background-color: #0f1a18 !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-card) !important;
+}
+.dark-theme-override input::placeholder,
+.dark-theme-override textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Inline practice / copy-mode board */
+.dark-theme-override #typing-copy-board,
+.dark-theme-override #typing-engine-container {
+  background-color: var(--bg-card-sub) !important;
+}
+
+/* Bottom nav */
+.dark-theme-override nav.fixed.bottom-0 {
+  background-color: var(--bg-card) !important;
+  border-top-color: var(--border-card) !important;
+}
+
+/* Header */
+.dark-theme-override header {
+  background-color: var(--bg-card) !important;
+  border-bottom-color: var(--border-card) !important;
+}
+
+/* ─── 3D Tactile Shadows ────────────────────────────────── */
+.hover-3d-shadow {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hover-3d-shadow:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 10px 22px -5px rgba(4, 120, 87, 0.25),
+    0 6px 10px -4px rgba(4, 120, 87, 0.15),
+    0 3.5px 0 0 #047857 !important;
+}
+.dark-theme-override .hover-3d-shadow:hover {
+  box-shadow:
+    0 10px 24px -4px rgba(16, 185, 129, 0.2),
+    0 6px 10px -4px rgba(16, 185, 129, 0.12),
+    0 3.5px 0 0 #10b981 !important;
+}
+.hover-3d-shadow-amber:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 10px 22px -5px rgba(245, 158, 11, 0.3),
+    0 6px 10px -4px rgba(245, 158, 11, 0.2),
+    0 3.5px 0 0 #d97706 !important;
+}
+
+/* ─── Animations ────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* slide-up for mobile drawer */
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.animate-slideUp {
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─── Mobile Bottom Nav ─────────────────────────────────── */
+/* Reserve space so content isn't hidden behind the fixed bottom nav */
+.mobile-content-pad {
+  padding-bottom: calc(4rem + var(--safe-bottom));
+}
+
+/* ─── Mobile Keyboard fix ───────────────────────────────── */
+/* When soft keyboard opens, the viewport shrinks.
+   Using dvh (dynamic viewport height) prevents content from being cut off. */
+.h-dvh { height: 100dvh; }
+.min-h-dvh { min-height: 100dvh; }
+
+/* ─── Hide scrollbar for horizontal chip rows ───────────── */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+/* On desktop keep old max-height; on mobile fill remaining space */
+.chat-messages-scroll {
+  flex: 1 1 0;
+  overflow-y: auto;
+  min-height: 120px;
+}
+
+/* ─── Prevent iOS font-size zoom on input focus ─────────── */
+input, textarea, select {
+  font-size: 16px; /* must be ≥ 16px to block iOS zoom */
+}
+/* Override back to design size only for display text */
+.text-xs-safe { font-size: max(12px, 0.75rem); }
