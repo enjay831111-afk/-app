@@ -48,8 +48,8 @@ export default function InteractiveChatCoach({
   const [isRegenerating, setIsRegenerating]       = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // ⚡ 電腦版打字輸入筐預設高度 200px
-  const [typingBoxHeight, setTypingBoxHeight] = useState(200);
+  // ⚡ 電腦版打字輸入筐預設高度 180px
+  const [typingBoxHeight, setTypingBoxHeight] = useState(180);
   const isDraggingRef = useRef(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -297,20 +297,20 @@ export default function InteractiveChatCoach({
   );
 
   return (
-    <div className="flex flex-col gap-4" id="chat-coach-layout">
+    <div className="flex flex-col gap-3" id="chat-coach-layout">
 
-      {/* Mobile UI elements */}
+      {/* Mobile Topic Bar */}
       <div className="lg:hidden flex items-center gap-2">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-100 rounded-2xl shadow-xs text-xs font-bold text-slate-700 cursor-pointer hover:border-emerald-300 transition"
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-2xl shadow-xs text-xs font-bold text-slate-700 cursor-pointer hover:border-emerald-300 transition shrink-0"
         >
           <BrainCircuit className="h-4 w-4 text-emerald-700" />
-          {hasStarted ? '更換 / 查看主題' : '選擇對話主題'}
+          主題
           <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
         </button>
         {hasStarted && (
-          <div className="flex-1 min-w-0 bg-emerald-50 border border-emerald-100 rounded-2xl px-3 py-2">
+          <div className="flex-1 min-w-0 bg-emerald-50 border border-emerald-100 rounded-2xl px-3 py-1.5">
             <p className="text-[11px] font-semibold text-emerald-800 truncate">{currentPrompt}</p>
           </div>
         )}
@@ -336,44 +336,44 @@ export default function InteractiveChatCoach({
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" style={{ minHeight: 0 }}>
 
-        {/* Desktop sidebar */}
+        {/* Desktop Sidebar */}
         <div className="hidden lg:flex lg:col-span-1 bg-white border border-slate-100 rounded-3xl p-5 shadow-xs flex-col">
           <SidebarContent />
         </div>
 
         {/* Chat Feed Box */}
-        <div id="chat-main-feed-container" className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col shadow-xs"
-             style={{ minHeight: 0, height: 'clamp(520px, calc(100dvh - 200px), 860px)' }}>
+        {/* 手機版移除固定高度與大內襯，高度改為 100% 填滿，藉由 flex-1 推至螢幕最底 */}
+        <div id="chat-main-feed-container" className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-2.5 sm:p-4 flex flex-col shadow-xs w-full"
+             style={{ 
+               minHeight: 0, 
+               height: window.innerWidth >= 1024 ? 'clamp(520px, calc(100dvh - 180px), 860px)' : 'calc(100dvh - 140px)' 
+             }}>
 
           {/* Feed Header */}
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3 px-1 shrink-0">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2 px-1 shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
               <div>
                 <h3 className="text-sm font-extrabold text-slate-800 leading-tight">AI 英語互動對白訓練</h3>
-                <p className="text-[10px] text-slate-400 font-medium">對答回合：{turnCount} | 每 3 輪切換摯友風格</p>
+                <p className="text-[10px] text-slate-400 font-medium">對答回合：{turnCount}</p>
               </div>
             </div>
             {turnCount > 0 && (
-              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-                isFriendMode
-                  ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                  : 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                isFriendMode ? 'bg-amber-100 text-amber-800' : 'bg-emerald-50 text-emerald-800'
               }`}>
-                {isFriendMode ? '💬 摯友模式' : '🎓 教練模式'}
+                {isFriendMode ? '💬 摯友' : '🎓 教練'}
               </span>
             )}
           </div>
 
-          {/* Scrollable messages */}
-          <div className="chat-messages-scroll space-y-5 pr-1 mb-1 flex-1 overflow-y-auto" style={{ minHeight: '60px' }}>
+          {/* Scrollable Messages */}
+          <div className="chat-messages-scroll space-y-4 pr-1 mb-1 flex-1 overflow-y-auto" style={{ minHeight: '60px' }}>
             {!hasStarted ? (
               <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 p-8 space-y-3">
                 <MessageSquare className="h-10 w-10 text-emerald-700/60" />
                 <p className="text-sm font-semibold text-slate-600">歡迎來到 AI 互動對話練習</p>
-                <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
-                  請點擊上方「選擇對話主題」，選擇主題後即可開始！
-                </p>
+                <p className="text-xs text-slate-400 max-w-sm">請點擊上方「選擇對話主題」開始！</p>
               </div>
             ) : (
               <>
@@ -386,9 +386,9 @@ export default function InteractiveChatCoach({
                       <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
                         <span className="text-[10px] text-slate-400">不想回答這個提問？</span>
                         <button onClick={handleRegenerateInitialQuestion} disabled={isRegenerating || isPending}
-                          className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 transition cursor-pointer disabled:opacity-50">
+                          className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 transition cursor-pointer">
                           <RefreshCw className={`h-3 w-3 ${isRegenerating ? 'animate-spin' : ''}`} />
-                          {isRegenerating ? '更換中...' : '換個提問'}
+                          換個提問
                         </button>
                       </div>
                     )}
@@ -399,14 +399,8 @@ export default function InteractiveChatCoach({
                   <div key={msg.id || idx} className="space-y-4">
                     {msg.role === 'user' && (
                       <div className="flex items-start justify-end gap-2 pl-8 sm:pl-12">
-                        <div className="bg-emerald-800 text-white rounded-2xl p-3 sm:p-4 shadow-sm border border-emerald-700 min-w-0">
+                        <div className="bg-emerald-800 text-white rounded-2xl p-3 shadow-sm border border-emerald-700 min-w-0">
                           <p className="text-sm font-semibold leading-relaxed">{msg.text}</p>
-                          {msg.wordCount && (
-                            <div className="mt-2 pt-1 border-t border-emerald-700/60 flex flex-wrap justify-between items-center text-[10px] text-amber-200 font-mono gap-1">
-                              <span>輸入字數：{msg.wordCount} 字</span>
-                              <span className="hidden sm:inline">已記錄盲打正確率與速度</span>
-                            </div>
-                          )}
                         </div>
                         <div className="h-8 w-8 rounded-full bg-emerald-950 text-amber-300 flex items-center justify-center text-xs font-bold shrink-0 shadow-sm border border-emerald-800">ME</div>
                       </div>
@@ -419,104 +413,12 @@ export default function InteractiveChatCoach({
                           <div className="space-y-3 flex-1 min-w-0">
                             <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-2xs">
                               <span className={`text-[9px] font-bold block mb-1 tracking-wider uppercase ${msg.isFriendTurn ? 'text-amber-600' : 'text-emerald-700'}`}>
-                                {msg.isFriendTurn ? '💬 好友私房回信 (Friend Reply)' : '🎓 專業教練指導 (Coach Answer)'}
+                                {msg.isFriendTurn ? '💬 好友私房回信' : '🎓 專業教練指導'}
                               </span>
                               <p className="text-sm font-semibold text-slate-700 leading-relaxed">{msg.text}</p>
-                              {idx === chatHistory.length - 1 && (
-                                <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
-                                  <span className="text-[10px] text-slate-400">不想回答這個提問？</span>
-                                  <button onClick={() => handleRegenerateFollowUpQuestion(msg.text)} disabled={isRegenerating || isPending}
-                                    className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 transition cursor-pointer disabled:opacity-50">
-                                    <RefreshCw className={`h-3 w-3 ${isRegenerating ? 'animate-spin' : ''}`} />
-                                    {isRegenerating ? '更換中...' : '換個提問'}
-                                  </button>
-                                </div>
-                              )}
                             </div>
-
-                            {msg.analysis?.isTooShort && (
-                              <div className="bg-amber-500/5 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
-                                <ShieldAlert className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
-                                <div>
-                                  <h5 className="text-xs font-extrabold text-amber-800">⚠️ 長句申論訓練</h5>
-                                  <p className="text-[11px] text-amber-700 leading-relaxed mt-0.5">
-                                    您的回答僅有 {msg.analysis.wordCount} 個單字（低標 30 字）。試著多描述 <strong>Why / How / 感受</strong>！
-                                  </p>
-                                </div>
-                              </div>
-                            )}
                           </div>
                         </div>
-
-                        {msg.analysis && (
-                          <div className="pl-11 space-y-4">
-                            {!msg.analysis.isCorrect && msg.analysis.errorsFound?.length > 0 && (
-                              <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-2xs space-y-3">
-                                <span className="text-xs font-extrabold text-rose-500 block border-b border-slate-50 pb-2">
-                                  📊 本回合寫作錯誤診斷
-                                </span>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                  {msg.analysis.errorsFound.map((err, errIdx) => (
-                                    <div key={errIdx} className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2">
-                                      <span className="text-[10px] font-bold bg-rose-50 text-rose-600 px-2 py-0.5 rounded">
-                                        {CATEGORY_CHINESE[err.category as ErrorCategory] || err.category}
-                                      </span>
-                                      <div className="space-y-1 text-[11px]">
-                                        <p className="text-slate-500"><span className="font-semibold text-rose-500 line-through">"{err.original}"</span> → <span className="font-semibold text-emerald-600">"{err.corrected}"</span></p>
-                                        <p className="text-slate-600 leading-relaxed"><strong className="text-slate-700">糾錯解析:</strong> {err.explanation}</p>
-                                        <p className="text-emerald-900 font-medium italic"><strong className="text-emerald-800 font-sans not-italic">道地說法:</strong> "{err.nativeAlternative}"</p>
-                                      </div>
-                                      <div className="pt-2 flex flex-wrap gap-1.5 border-t border-slate-200/40">
-                                        <button onClick={() => startInlinePractice(`${msg.id}_err_${errIdx}`, err.corrected)}
-                                          className="py-1.5 px-2 bg-emerald-800 hover:bg-emerald-700 text-white text-[10px] font-extrabold flex items-center gap-1 transition rounded-lg cursor-pointer shadow-2xs">
-                                          <Keyboard className="h-3 w-3 text-amber-400" />打一次修正句
-                                        </button>
-                                        <button onClick={() => startInlinePractice(`${msg.id}_native_${errIdx}`, err.nativeAlternative)}
-                                          className="py-1.5 px-2 bg-amber-50 hover:bg-amber-400 text-emerald-950 text-[10px] font-extrabold flex items-center gap-1 transition rounded-lg cursor-pointer shadow-2xs">
-                                          <Sparkles className="h-3 w-3" />打一次道地句
-                                        </button>
-                                      </div>
-                                      {renderInlinePractice(`${msg.id}_err_${errIdx}`, err.corrected)}
-                                      {renderInlinePractice(`${msg.id}_native_${errIdx}`, err.nativeAlternative)}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-2xs space-y-4">
-                              <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
-                                <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" />
-                                <span className="text-xs font-extrabold text-slate-800">⭐ Native Speaker Upgrade (母語表達三階進化)</span>
-                              </div>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {[
-                                  { label: '⭐ Understandable', labelColor: 'text-slate-400', text: msg.analysis.understandableEnglish, key: 'upgrade_1', bg: 'bg-slate-50 border-slate-100' },
-                                  { label: '⭐⭐ Native Speaker', labelColor: 'text-emerald-700', text: msg.analysis.nativeSpeakerVersion, key: 'upgrade_2', bg: 'bg-emerald-50/20 border-emerald-100/50' },
-                                  { label: '⭐⭐⭐ Highly Natural', labelColor: 'text-amber-600', text: msg.analysis.highlyNaturalVersion, key: 'upgrade_3', bg: 'bg-amber-50/20 border-amber-100' },
-                                ].map(({ label, labelColor, text, key, bg }) => (
-                                  <div key={key} className={`${bg} rounded-xl p-3.5 border flex flex-col gap-2`}>
-                                    <span className={`text-[10px] font-extrabold uppercase tracking-wider ${labelColor}`}>{label}</span>
-                                    <p className="text-xs font-semibold text-slate-800 leading-relaxed flex-1">"{text}"</p>
-                                    <div className="flex flex-col gap-1.5 pt-1">
-                                      <button onClick={() => onLoadForPractice(text)}
-                                        className="py-1.5 px-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 flex items-center justify-center gap-1 transition cursor-pointer">
-                                        載入經典盲打 <ArrowUpRight className="h-3 w-3 text-slate-400" />
-                                      </button>
-                                      <button onClick={() => startInlinePractice(`${msg.id}_${key}`, text)}
-                                        className="py-1.5 px-2 bg-emerald-800 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 transition cursor-pointer shadow-2xs">
-                                        <Keyboard className="h-3 w-3 text-amber-400" />立即打一次
-                                      </button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                              {renderInlinePractice(`${msg.id}_upgrade_1`, msg.analysis.understandableEnglish)}
-                              {renderInlinePractice(`${msg.id}_upgrade_2`, msg.analysis.nativeSpeakerVersion)}
-                              {renderInlinePractice(`${msg.id}_upgrade_3`, msg.analysis.highlyNaturalVersion)}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
@@ -528,87 +430,113 @@ export default function InteractiveChatCoach({
               <div className="flex items-start space-x-3 animate-pulse">
                 <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-extrabold shrink-0">AI</div>
                 <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-2xs space-y-2">
-                  <span className="text-xs text-slate-400 font-bold block">AI 教練正在分析您的句子...</span>
                   <div className="flex space-x-1.5">
                     {[0, 150, 300].map(delay => (
-                      <div key={delay} className="w-2.5 h-2.5 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
+                      <div key={delay} className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
                     ))}
                   </div>
                 </div>
               </div>
             )}
-
             <div ref={chatEndRef} />
           </div>
 
-          {/* ⚡ 智慧拉伸控制條 (Resizer)：只在電腦版 (lg:flex) 顯示，手機版直接隱藏不佔空間 */}
+          {/* ⚡ 電腦版拉伸控制線 */}
           {hasStarted && (
             <div
-              className="hidden lg:flex w-full h-2 my-1 bg-slate-200/50 hover:bg-emerald-600/30 active:bg-emerald-700/50 rounded-full cursor-row-resize items-center justify-center transition-colors select-none shrink-0"
-              onMouseDown={(e) => {
-                isDraggingRef.current = true;
-                document.body.style.cursor = 'row-resize';
-                document.body.style.userSelect = 'none';
-              }}
-              title="按住上下拖曳，可調整輸入框高度"
+              className="hidden lg:flex w-full h-1.5 my-1 bg-slate-200/40 hover:bg-emerald-600/20 rounded-full cursor-row-resize items-center justify-center shrink-0"
+              onMouseDown={() => { isDraggingRef.current = true; }}
             >
-              <GripHorizontal className="h-3.5 w-3.5 text-slate-400 hover:text-emerald-700" />
+              <GripHorizontal className="h-3 w-3 text-slate-400" />
             </div>
           )}
 
-          {/* Typing input */}
+          {/* Typing Input Section */}
           {hasStarted && (
             <div 
-              className="shrink-0 flex flex-col overflow-hidden lg:h-auto" 
+              className="shrink-0 flex flex-col overflow-hidden" 
               style={{ height: window.innerWidth >= 1024 ? `${typingBoxHeight}px` : 'auto' }}
             >
-              {/* 透過精準樣式注入：手機版自動撐開高度，按鈕永不遺失；電腦版完美支援高度拖曳 */}
+              {/* ⚡ 核心樣式控制：覆蓋 TypingEngine 內部的排版，完美緊貼底部並實現左右並排 */}
               <style>{`
-                /* 1. 精確隱藏打字引擎內部的數據顯示列 */
-                #chat-typing-container .typing-stats-row, 
-                #chat-typing-container [class*=\"grid-cols-4\"], 
-                #chat-typing-container [class*=\"space-x-4\"],
-                #chat-typing-container [class*=\"stats\"] { 
-                  display: none !important; 
+                /* 隱藏打字引擎內建的頂部多餘數據欄 */
+                #chat-typing-container .typing-stats-row,
+                #chat-typing-container [class*="grid-cols-4"],
+                #chat-typing-container [class*="space-x-4"] {
+                  display: none !important;
                 }
 
-                /* 2. 電腦版專屬高度約束 (RWD 覆蓋) */
-                @media (min-width: 1024px) {
-                  #chat-typing-container,
-                  #chat-typing-container > div {
-                    height: 100% !important;
-                    max-height: 100% !important;
-                  }
-                  #chat-typing-container textarea,
-                  #chat-typing-container .typing-textarea-mock {
-                    height: calc(100% - 56px) !important; /* 扣除送出按鈕的高度 */
-                    overflow-y: auto !important;
-                    resize: none !important;
-                  }
+                /* 強制將原本上下排列的按鈕欄改為：左右橫向並排 (Flex-Row) */
+                #chat-typing-container .flex-col {
+                  flex-direction: row !important;
+                  display: flex !important;
+                  gap: 8px !important;
+                  width: 100% !important;
+                  margin-top: 4px !important;
                 }
-                
-                /* 3. 手機行動版專屬優化：解除固定高度，確保「重新練習與送出回答」隨時可見 */
+
+                /* 修正按鈕群組在行動端的間距與佈局 */
+                #chat-typing-container .mt-4,
+                #chat-typing-container .space-y-2,
+                #chat-typing-container .space-x-2 {
+                  display: flex !important;
+                  flex-direction: row !important;
+                  gap: 8px !important;
+                  space-x: 0 !important;
+                  space-y: 0 !important;
+                  margin-top: 6px !important;
+                  width: 100% !important;
+                }
+
+                /* 左右兩個按鈕平分寬度 */
+                #chat-typing-container button {
+                  flex: 1 !important;
+                  width: auto !important;
+                  margin: 0 !important;
+                  padding-top: 10px !important;
+                  padding-bottom: 10px !important;
+                  font-size: 13px !important;
+                  font-weight: 800 !important;
+                  border-radius: 12px !important;
+                }
+
+                /* 🪄 透過 CSS 文字強行替換子組件內容為「重練」 */
+                #chat-typing-container button:first-child {
+                  font-size: 0 !important; /* 隱藏原本的 重新練習(Reset) 字樣 */
+                  background-color: #f1f5f9 !important; /* 優雅的灰底 */
+                  color: #475569 !important;
+                }
+                #chat-typing-container button:first-child::before {
+                  content: "重練" !important;
+                  font-size: 13px !important;
+                  font-weight: 800 !important;
+                }
+
+                /* 🪄 透過 CSS 文字強行替換右側按鈕為「送出」 */
+                #chat-typing-container button:last-child {
+                  font-size: 0 !important;
+                  background-color: #065f46 !important; /* 深翡翠綠 */
+                  color: #ffffff !important;
+                }
+                #chat-typing-container button:last-child::before {
+                  content: "送出" !important;
+                  font-size: 13px !important;
+                  font-weight: 800 !important;
+                }
+
+                /* 行動端專屬緊貼優化：將輸入框壓榨到極致，留白全消，直接靠齊底部頁籤 */
                 @media (max-width: 1023px) {
                   #chat-main-feed-container {
-                    height: auto !important;
-                    max-height: calc(100dvh - 120px) !important;
+                    padding-bottom: 4px !important;
+                    margin-bottom: 0 !important;
                   }
-                  #chat-typing-container {
-                    height: auto !important;
+                  #chat-typing-container textarea {
+                    height: 72px !important; /* 略微縮減輸入框高度，釋放空間 */
+                    min-height: 72px !important;
+                    font-size: 15px !important;
+                    margin-bottom: 2px !important;
+                    border-radius: 14px !important;
                   }
-                  #chat-typing-container textarea,
-                  #chat-typing-container .typing-textarea-mock {
-                    height: 90px !important; /* 手機版輸入框給予適當的固定精簡高度，騰出空間給按鈕 */
-                    min-height: 80px !important;
-                    overflow-y: auto !important;
-                    resize: none !important;
-                  }
-                }
-
-                #chat-typing-container textarea,
-                #chat-typing-container .typing-textarea-mock {
-                  font-size: 16px !important;
-                  line-height: 1.5 !important;
                 }
               `}</style>
               
@@ -620,8 +548,8 @@ export default function InteractiveChatCoach({
                     handleSubmitMessage(text);
                   }}
                   minWordsForComplete={30}
-                  actionButtonLabel="送出回答並進行剖析"
-                  placeholder="在此輸入您的英文回覆... 試著寫滿 30 個單字以上！"
+                  actionButtonLabel="送出"
+                  placeholder="在此輸入您的英文回覆..."
                 />
               </div>
             </div>
