@@ -46,7 +46,6 @@ export default function InteractiveChatCoach({
   const [customPromptTitle, setCustomPromptTitle] = useState('');
   const [customPromptDesc, setCustomPromptDesc]   = useState('');
   const [isRegenerating, setIsRegenerating]       = useState(false);
-  // Mobile: sidebar drawer open state
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -111,7 +110,7 @@ export default function InteractiveChatCoach({
     updateCurrentPrompt(prompt);
     updateHasStarted(true);
     updateActiveTopicTitle(title);
-    setSidebarOpen(false); // close drawer on mobile after picking
+    setSidebarOpen(false);
   };
 
   const handleTypingComplete = (finalWpm: number, finalAccuracy: number) => {
@@ -188,7 +187,6 @@ export default function InteractiveChatCoach({
 
   const isFriendMode = turnCount % 3 === 0 && turnCount > 0;
 
-  // ── Sidebar content (shared between desktop and mobile drawer) ──────
   const SidebarContent = () => (
     <div className="space-y-5 h-full flex flex-col">
       <div>
@@ -243,7 +241,6 @@ export default function InteractiveChatCoach({
         </div>
       )}
 
-      {/* Mode guide */}
       <div className="bg-gradient-to-br from-emerald-950/5 to-amber-500/5 rounded-2xl p-4 border border-emerald-100/50 space-y-3 mt-auto">
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4 text-amber-500" />
@@ -268,7 +265,7 @@ export default function InteractiveChatCoach({
   return (
     <div className="flex flex-col gap-4" id="chat-coach-layout">
 
-      {/* ── Mobile: topic bar + drawer trigger ──────────── */}
+      {/* Mobile UI elements */}
       <div className="lg:hidden flex items-center gap-2">
         <button
           onClick={() => setSidebarOpen(true)}
@@ -285,12 +282,9 @@ export default function InteractiveChatCoach({
         )}
       </div>
 
-      {/* ── Mobile drawer overlay ────────────────────────── */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
-          {/* Sheet */}
           <div className="relative bg-white rounded-t-3xl p-5 animate-slideUp max-h-[80dvh] flex flex-col"
                style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}>
             <div className="flex items-center justify-between mb-4">
@@ -306,7 +300,6 @@ export default function InteractiveChatCoach({
         </div>
       )}
 
-      {/* ── Main layout ─────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" style={{ minHeight: 0 }}>
 
         {/* Desktop sidebar */}
@@ -314,7 +307,7 @@ export default function InteractiveChatCoach({
           <SidebarContent />
         </div>
 
-        {/* Chat feed + typing box */}
+        {/* Chat Feed Box */}
         <div className="lg:col-span-3 bg-slate-50/50 border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col shadow-xs"
              style={{ minHeight: 0, height: 'clamp(480px, calc(100dvh - 200px), 820px)' }}>
 
@@ -350,7 +343,6 @@ export default function InteractiveChatCoach({
               </div>
             ) : (
               <>
-                {/* Initial prompt bubble */}
                 <div className="flex items-start space-x-3">
                   <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-extrabold shadow-sm shrink-0">AI</div>
                   <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-2xs flex-1 min-w-0">
@@ -369,7 +361,6 @@ export default function InteractiveChatCoach({
                   </div>
                 </div>
 
-                {/* Chat history */}
                 {chatHistory.map((msg, idx) => (
                   <div key={msg.id || idx} className="space-y-4">
                     {msg.role === 'user' && (
@@ -447,7 +438,7 @@ export default function InteractiveChatCoach({
                                           <Keyboard className="h-3 w-3 text-amber-400" />打一次修正句
                                         </button>
                                         <button onClick={() => startInlinePractice(`${msg.id}_native_${errIdx}`, err.nativeAlternative)}
-                                          className="py-1.5 px-2 bg-amber-500 hover:bg-amber-400 text-emerald-950 text-[10px] font-extrabold flex items-center gap-1 transition rounded-lg cursor-pointer shadow-2xs">
+                                          className="py-1.5 px-2 bg-amber-50 hover:bg-amber-400 text-emerald-950 text-[10px] font-extrabold flex items-center gap-1 transition rounded-lg cursor-pointer shadow-2xs">
                                           <Sparkles className="h-3 w-3" />打一次道地句
                                         </button>
                                       </div>
@@ -459,13 +450,11 @@ export default function InteractiveChatCoach({
                               </div>
                             )}
 
-                            {/* Native Speaker Upgrades */}
                             <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-2xs space-y-4">
                               <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
                                 <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" />
                                 <span className="text-xs font-extrabold text-slate-800">⭐ Native Speaker Upgrade (母語表達三階進化)</span>
                               </div>
-                              {/* Stack vertically on mobile, 3-col on md+ */}
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {[
                                   { label: '⭐ Understandable', labelColor: 'text-slate-400', text: msg.analysis.understandableEnglish, key: 'upgrade_1', bg: 'bg-slate-50 border-slate-100' },
@@ -521,9 +510,9 @@ export default function InteractiveChatCoach({
           {/* Typing input */}
           {hasStarted && (
             <div className="border-t border-slate-100 pt-4 shrink-0 flex-1 flex flex-col">
-              {/* 透過內部注入注入 CSS：強制隱藏數據欄，並將輸入框筐撐大 */}
+              {/* 💡 修正後的樣式注入：精確隱藏數據顯示欄，但移除對 textarea 高度的固定鎖死，完整保留拖曳大小的功能 */}
               <style>{`
-                /* 1. 隱藏打字引擎內部的數據顯示列 (WPM, 正確率, 字數統計, 時間) */
+                /* 1. 精確隱藏打字引擎內部的數據顯示列 (WPM, 正確率, 字數統計, 計時器) */
                 #chat-typing-container .typing-stats-row, 
                 #chat-typing-container [class*="grid-cols-4"], 
                 #chat-typing-container [class*="space-x-4"],
@@ -531,14 +520,10 @@ export default function InteractiveChatCoach({
                   display: none !important; 
                 }
                 
-                /* 2. 強制將輸入框的高度與寬度撐大，提供完美的長句盲打申論空間 */
+                /* 2. 只給予初始高度（而不是用 min-height 鎖死），這樣右下角的拖曳(resize)控制權才能維持生效 */
                 #chat-typing-container textarea,
-                #chat-typing-container input[type="text"],
-                #chat-typing-container .typing-textarea-mock,
-                #chat-typing-container [class*="input"],
-                #chat-typing-container [class*="textarea"] {
-                  min-height: 180px !important;
-                  width: 100% !important;
+                #chat-typing-container .typing-textarea-mock {
+                  height: 180px; 
                   font-size: 16px !important;
                   line-height: 1.6 !important;
                 }
