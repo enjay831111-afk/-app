@@ -78,8 +78,7 @@ export default function InteractiveChatCoach({
       if (data.question) updateCurrentPrompt(data.question);
     } catch (err: any) {
       console.error(err);
-      alert('產生新提問失敗：' + (err.message || '連線逾時'));
-    } finaly {
+    } finally {
       setIsRegenerating(false);
     }
   };
@@ -98,8 +97,7 @@ export default function InteractiveChatCoach({
       if (data.question) onReplaceLastAiMessage(data.question);
     } catch (err: any) {
       console.error(err);
-      alert('產生新提問失敗：' + (err.message || '連線逾時'));
-    } finaly {
+    } finally {
       setIsRegenerating(false);
     }
   };
@@ -132,7 +130,7 @@ export default function InteractiveChatCoach({
     };
   }, []);
 
-  // 🎯 核心控制：動態將 0/30 計數器注入到 textarea 容器內部右下角
+  // 🎯 核心強效改造指令：全方位清潔與重整元件內容
   useEffect(() => {
     if (!hasStarted) return;
 
@@ -140,12 +138,48 @@ export default function InteractiveChatCoach({
       const container = document.getElementById('chat-typing-container');
       if (!container) return;
 
+      // --- 1. 把鉛筆圖示的已輸入0字列、0 words 徹底刪除 ---
+      // 尋找包含鉛筆圖標或特定字眼的整行區塊
+      const allDivs = container.getElementsByTagName('div');
+      for (let i = 0; i < allDivs.length; i++) {
+        const div = allDivs[i];
+        if (
+          div.textContent?.includes('已輸入') || 
+          div.textContent?.includes('目標30字') || 
+          div.textContent?.includes('words') ||
+          div.querySelector('.lucide-pen-tool')
+        ) {
+          // 如果這個 div 裡面不包含 textarea 或按鈕，就直接把它徹底隱藏或拔除
+          if (!div.querySelector('textarea') && !div.querySelector('button')) {
+            div.style.display = 'none';
+            div.style.height = '0px';
+            div.style.padding = '0px';
+            div.style.margin = '0px';
+          }
+        }
+      }
+
+      // --- 2. 處理按鈕改名（重練、送出） ---
+      const buttons = container.getElementsByTagName('button');
+      if (buttons.length >= 2) {
+        const btnLeft = buttons[0];
+        const btnRight = buttons[1];
+        
+        if (btnLeft && (btnLeft.textContent?.includes('重新練習') || btnLeft.textContent?.includes('Reset') || btnLeft.textContent !== '重練')) {
+          btnLeft.textContent = '重練';
+        }
+        if (btnRight && (btnRight.textContent?.includes('送出回答') || btnRight.textContent?.includes('剖析') || btnRight.textContent !== '送出')) {
+          btnRight.textContent = '送出';
+        }
+      }
+
+      // --- 3. 把 0/30 計數器完美塞入對話框（Textarea）右下角內部 ---
       const textarea = container.querySelector('textarea');
       const textareaWrapper = textarea?.parentElement;
 
       if (textarea && textareaWrapper) {
         textareaWrapper.style.position = 'relative';
-        textarea.style.paddingBottom = '32px'; // 防止打字蓋到計數器
+        textarea.style.paddingBottom = '34px'; // 留出空隙給右下角的字數計數
 
         let innerCounter = textareaWrapper.querySelector('#inner-word-counter');
         if (!innerCounter) {
@@ -160,10 +194,10 @@ export default function InteractiveChatCoach({
             font-weight: bold !important;
             color: #64748b !important;
             background: rgba(255, 255, 255, 0.85) !important;
-            padding: 1px 4px !important;
+            padding: 1px 5px !important;
             border-radius: 4px !important;
             pointer-events: none !important;
-            z-index: 20 !important;
+            z-index: 30 !important;
           `);
           textareaWrapper.appendChild(innerCounter);
         }
@@ -178,7 +212,7 @@ export default function InteractiveChatCoach({
         textarea.addEventListener('input', updateInnerCount);
         updateInnerCount();
       }
-    }, 200);
+    }, 100); // 縮短至 100 毫秒高速巡檢，確保任何狀態切換都能即時處理乾淨
 
     return () => clearInterval(interval);
   }, [hasStarted, chatHistory]);
@@ -574,7 +608,7 @@ export default function InteractiveChatCoach({
               <div className="flex items-start space-x-3 animate-pulse">
                 <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-extrabold shrink-0">AI</div>
                 <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-2xs space-y-2">
-                  <span className="text-xs text-slate-400 font-bold block">AI 教練正在 analysis 您的句子...</span>
+                  <span className="text-xs text-slate-400 font-bold block">AI 教練正在分析您的句子...</span>
                   <div className="flex space-x-1.5">
                     {[0, 150, 300].map(delay => (
                       <div key={delay} className="w-2.5 h-2.5 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: `${delay}ms` }} />
@@ -609,7 +643,7 @@ export default function InteractiveChatCoach({
               style={{ height: window.innerWidth >= 1024 ? `${typingBoxHeight}px` : 'auto' }}
             >
               <style>{`
-                /* 1. 精確隱藏打字引擎內部的頂部數據顯示列（四大卡片） */
+                /* 隱藏打字引擎內部的頂部四大數據卡片 */
                 #chat-typing-container .typing-stats-row, 
                 #chat-typing-container [class*="grid-cols-4"], 
                 #chat-typing-container [class*="space-x-4"],
@@ -618,34 +652,7 @@ export default function InteractiveChatCoach({
                   display: none !important; 
                 }
 
-                /* 🎯 2. 徹底消滅鉛筆圖案的「已輸入 0 字 (目標 30 字)」與右方的「0 words」整橫條 */
-                #chat-typing-container .flex.items-center.justify-between.p-3,
-                #chat-typing-container div:has(> .lucide-pen-tool),
-                #chat-typing-container .text-slate-400.text-xs,
-                #chat-typing-container div.text-xs.text-slate-400,
-                #chat-typing-container .text-slate-400:has(span),
-                #chat-typing-container div:has(> span:contains("words")) {
-                  display: none !important;
-                  opacity: 0 !important;
-                  height: 0 !important;
-                  padding: 0 !important;
-                  margin: 0 !important;
-                }
-
-                /* 🎯 3. 修改按鈕文字與樣式：左按鈕改為「重練」、右按鈕改為「送出」並維持原寬度排版 */
-                #chat-typing-container button {
-                  font-size: 0 !important; /* 隱藏原本的超長字串 */
-                }
-                #chat-typing-container button:first-child::before {
-                  content: "重練" !important;
-                  font-size: 14px !important;
-                }
-                #chat-typing-container button:last-child::before {
-                  content: "送出" !important;
-                  font-size: 14px !important;
-                }
-
-                /* 4. 電腦版專屬高度約束 */
+                /* 電腦版高度約束自適應 */
                 @media (min-width: 1024px) {
                   #chat-typing-container,
                   #chat-typing-container > div {
@@ -660,7 +667,7 @@ export default function InteractiveChatCoach({
                   }
                 }
                 
-                /* 5. 手機行動版專屬優化 */
+                /* 手機行動版專屬優化 */
                 @media (max-width: 1023px) {
                   #chat-main-feed-container {
                     height: auto !important;
